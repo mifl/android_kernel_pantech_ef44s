@@ -37,6 +37,9 @@ struct clk_pair {
 	uint map;
 };
 
+/* MARUKO KDDI issue num@1708 p13447 shinjg 20130225 */
+#define CONFIG_QALCOMM_BUG_FIX_EBI_ERROR
+
 struct clk_pair clks[KGSL_MAX_CLKS] = {
 	{
 		.name = "src_clk",
@@ -904,7 +907,9 @@ void kgsl_pwrctrl_wake(struct kgsl_device *device)
 		/* Re-enable HW access */
 		mod_timer(&device->idle_timer,
 				jiffies + device->pwrctrl.interval_timeout);
+#if !defined(CONFIG_QALCOMM_BUG_FIX_EBI_ERROR)
 		if (device->pwrctrl.restore_slumber == false)
+#endif
 			pm_qos_update_request(&device->pm_qos_req_dma,
 						GPU_SWFI_LATENCY);
 	case KGSL_STATE_ACTIVE:

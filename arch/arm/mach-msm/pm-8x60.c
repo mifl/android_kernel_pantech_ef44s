@@ -21,6 +21,9 @@
 #include <linux/ktime.h>
 #include <linux/pm.h>
 #include <linux/pm_qos.h>
+#if defined(CONFIG_PANTECH_PMIC)
+#include <linux/proc_fs.h>
+#endif
 #include <linux/smp.h>
 #include <linux/suspend.h>
 #include <linux/tick.h>
@@ -50,6 +53,10 @@
 #include "spm.h"
 #include "timer.h"
 #include "pm-boot.h"
+
+#if defined(CONFIG_PANTECH_PMIC)
+#include "smd_private.h"
+#endif
 
 /******************************************************************************
  * Debug Definitions
@@ -318,6 +325,72 @@ static int __init msm_pm_mode_sysfs_add(void)
 mode_sysfs_add_exit:
 	return ret;
 }
+
+/******************************************************************************
+ * CONFIG_MSM_IDLE_STATS
+ *****************************************************************************/
+#if defined(CONFIG_PANTECH_PMIC)
+static oem_pm_smem_vendor1_data_type *smem_id_vendor1_ptr;
+static uint32_t oem_prev_reset=0;  // 20111021 jylee for apanic
+
+static int oem_pm_read_proc_reset_info
+	(char *page, char **start, off_t off, int count, int *eof, void *data)
+{
+	int len = 0;
+
+  smem_id_vendor1_ptr = (oem_pm_smem_vendor1_data_type*)smem_alloc(SMEM_ID_VENDOR1,
+                         sizeof(oem_pm_smem_vendor1_data_type));
+
+  len  = sprintf(page, "Power On Reason : 0x%x\n", smem_id_vendor1_ptr->power_on_reason);
+	len += sprintf(page + len, "Power On Mode : %d\n", smem_id_vendor1_ptr->power_on_mode);
+	len += sprintf(page + len, "SilentBoot: %d\n", smem_id_vendor1_ptr->silent_boot_mode);
+	len += sprintf(page + len, "HW Revision: %d\n", smem_id_vendor1_ptr->hw_rev);
+	len += sprintf(page + len, "Reset: %d\n", oem_prev_reset);  // 20111021 jylee for apanic
+	
+	printk(KERN_INFO "Power On Reason : 0x%x\n", smem_id_vendor1_ptr->power_on_reason);
+	printk(KERN_INFO "Power On Mode : %d\n", smem_id_vendor1_ptr->power_on_mode);
+	printk(KERN_INFO "SilentBoot: %d\n", smem_id_vendor1_ptr->silent_boot_mode);
+	printk(KERN_INFO "HW Revision: %d\n", smem_id_vendor1_ptr->hw_rev);
+	printk(KERN_INFO "Reset: %d\n", oem_prev_reset);  // 20111021 jylee for apanic
+	
+	return len;
+}
+
+int oem_pm_write_proc_reset_info
+  (struct file *file, const char *buffer, unsigned long count, void *data)
+{
+	int len;
+	char tbuffer[2];
+
+	if(count > 1 )
+		len = 1;
+	
+	memset(tbuffer, 0x00, 2);
+
+	if(copy_from_user(tbuffer, buffer, len))
+		return -EFAULT;
+	
+	tbuffer[len] = '\0';
+
+	if(tbuffer[0] >= '0' && tbuffer[0] <= '9')
+		oem_prev_reset = tbuffer[0] - '0';
+
+	return len;
+}
+
+int get_hw_revision(void)  // p14527 added for gain hw_revision
+{
+	if(smem_id_vendor1_ptr == NULL)
+	{
+  smem_id_vendor1_ptr = (oem_pm_smem_vendor1_data_type*)smem_alloc(SMEM_ID_VENDOR1,
+                         sizeof(oem_pm_smem_vendor1_data_type));	} 
+
+	return smem_id_vendor1_ptr->hw_rev;
+}
+EXPORT_SYMBOL(get_hw_revision);
+
+#endif
+
 
 /******************************************************************************
  * Configure Hardware before/after Low Power Mode
@@ -1066,6 +1139,10 @@ static int __init msm_pm_init(void)
 	};
 	unsigned long exit_phys;
 
+#if defined(CONFIG_PANTECH_PMIC)
+  struct proc_dir_entry *oem_pm_power_on_info;
+#endif
+
 	/* Page table for cores to come back up safely. */
 	pc_pgd = pgd_alloc(&init_mm);
 	if (!pc_pgd)
@@ -1103,6 +1180,15 @@ static int __init msm_pm_init(void)
 	clean_caches((unsigned long)&msm_pm_pc_pgd, sizeof(msm_pm_pc_pgd),
 		     virt_to_phys(&msm_pm_pc_pgd));
 
+#if defined(CONFIG_PANTECH_PMIC)
+  oem_pm_power_on_info = create_proc_entry("pantech_resetinfo", S_IRUGO | S_IWUSR | S_IWGRP, NULL);
+
+	if (oem_pm_power_on_info) {
+		oem_pm_power_on_info->read_proc  = oem_pm_read_proc_reset_info;
+		oem_pm_power_on_info->write_proc = oem_pm_write_proc_reset_info;
+		oem_pm_power_on_info->data       = NULL;
+	}
+#endif
 	msm_pm_mode_sysfs_add();
 	msm_pm_add_stats(enable_stats, ARRAY_SIZE(enable_stats));
 

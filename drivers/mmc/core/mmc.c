@@ -96,6 +96,12 @@ static int mmc_decode_cid(struct mmc_card *card)
 		card->cid.prod_name[3]	= UNSTUFF_BITS(resp, 72, 8);
 		card->cid.prod_name[4]	= UNSTUFF_BITS(resp, 64, 8);
 		card->cid.prod_name[5]	= UNSTUFF_BITS(resp, 56, 8);
+		
+/* 20121221 LS1-JHM modified : disabling BKOPS for samsung eMMC with firmware revision 0x12 (P018) */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+		card->cid.fwrev 	= UNSTUFF_BITS(resp, 48, 8);
+#endif
+
 		card->cid.serial	= UNSTUFF_BITS(resp, 16, 32);
 		card->cid.month		= UNSTUFF_BITS(resp, 12, 4);
 		card->cid.year		= UNSTUFF_BITS(resp, 8, 4) + 1997;
@@ -273,6 +279,11 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 	int err = 0, idx;
 	unsigned int part_size;
 	u8 hc_erase_grp_sz = 0, hc_wp_grp_sz = 0;
+
+/* 20130103 LS1-JHM modified : don't care on 4GB, 8GB eMMC */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+	unsigned int emmc_size;
+#endif
 
 	BUG_ON(!card);
 
@@ -463,6 +474,7 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 	}
 
 	if (card->ext_csd.rev >= 5) {
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
 		/* check whether the eMMC card support BKOPS */
 		if (ext_csd[EXT_CSD_BKOPS_SUPPORT] & 0x1) {
 			card->ext_csd.bkops = 1;
@@ -471,8 +483,15 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 				ext_csd[EXT_CSD_BKOPS_STATUS];
 			if (!card->ext_csd.bkops_en &&
 				card->host->caps2 & MMC_CAP2_INIT_BKOPS) {
-				err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-					EXT_CSD_BKOPS_EN, 1, 0);
+				/* check whether the eMMC card support BKOPS */
+				if(card->cid.oemid == 0x0100 && card->cid.manfid == 0x15
+						&& card->cid.fwrev > 0x06 && card->cid.fwrev < 0x14){
+					pr_warning("%s: BKOPS is not supported (Samsung eMMC rev.0x%x)\n",
+						mmc_hostname(card->host), card->cid.fwrev);
+				}else{
+					err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+						EXT_CSD_BKOPS_EN, 1, 0);
+				}
 				if (err)
 					pr_warning("%s: Enabling BKOPS failed\n",
 						mmc_hostname(card->host));
@@ -480,7 +499,7 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 					card->ext_csd.bkops_en = 1;
 			}
 		}
-
+#endif
 		/* check whether the eMMC card supports HPI */
 		if (ext_csd[EXT_CSD_HPI_FEATURES] & 0x1) {
 			card->ext_csd.hpi = 1;
@@ -539,6 +558,59 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 		card->ext_csd.max_packed_reads =
 			ext_csd[EXT_CSD_MAX_PACKED_READS];
 	}
+
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+/* 20121221 LS1-JHM modified : enabling DISCARD for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+	if(card->cid.oemid == 0x0100 && card->cid.manfid == 0x15){
+
+		/* 20130103 LS1-JHM modified : don't care on 4GB, 8GB eMMC */		
+		if (mmc_card_blockaddr(card))
+			emmc_size = card->ext_csd.sectors;
+		else
+			emmc_size = card->csd.capacity << (card->csd.read_blkbits - 9);
+
+		if (emmc_size > 20971520 /*(10u * 1024 * 1024 * 1024) / 512 = 10GB */ ){
+			if(card->cid.fwrev < 0x06){
+				add_quirk_mmc(card, MMC_QUIRK_NO_BKOPS);
+				card->ext_csd.bkops = 0;
+				card->ext_csd.bkops_en = 0;
+				add_quirk_mmc(card, MMC_QUIRK_NO_TRIM);
+			}
+			
+			/* disabling BKOPS for samsung eMMC with firmware revision 0x0f (P15), 0x12 (P18) */
+			if(card->cid.fwrev > 0x06 && card->cid.fwrev < 0x14){
+				add_quirk_mmc(card, MMC_QUIRK_NO_BKOPS);
+
+				card->ext_csd.bkops = 0;
+				card->ext_csd.bkops_en = 0;
+			}
+			
+			/* disabling TRIM for samsung eMMC with firmware revision 0x06 (P06), 0x0f (P15) */
+			if(card->cid.fwrev < 0x12){
+				add_quirk_mmc(card, MMC_QUIRK_NO_TRIM);
+			}
+
+			if (!(card->ext_csd.feature_support & MMC_DISCARD_FEATURE) 
+				&& (ext_csd[EXT_CSD_VENDOR_SPECIFIC] & 0x01)){
+					card->ext_csd.feature_support |= MMC_DISCARD_FEATURE;
+			}
+		}else{
+			add_quirk_mmc(card, MMC_QUIRK_NO_BKOPS);
+			card->ext_csd.bkops = 0;
+			card->ext_csd.bkops_en = 0;
+			add_quirk_mmc(card, MMC_QUIRK_NO_TRIM);
+		}
+		pr_err("%s: size %u, bkops %x, trim %x, discard %x (vendor spec %x)",
+			mmc_hostname(card->host),
+			emmc_size,
+			(card->quirks & MMC_QUIRK_NO_BKOPS)?0:1,
+			(card->quirks & MMC_QUIRK_NO_TRIM)?0:1,
+			(card->ext_csd.feature_support & MMC_DISCARD_FEATURE)?1:0,
+			ext_csd[EXT_CSD_VENDOR_SPECIFIC] &0x01);
+	}
+#endif
+
 
 out:
 	return err;

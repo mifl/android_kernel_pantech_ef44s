@@ -35,6 +35,10 @@
 #include <linux/gpio.h>
 #include "wcd9310.h"
 
+#ifdef CONFIG_PANTECH_SND    
+#include <linux/wakelock.h>
+static struct wake_lock snd_wakeup;
+#endif
 static int cfilt_adjust_ms = 10;
 module_param(cfilt_adjust_ms, int, 0644);
 MODULE_PARM_DESC(cfilt_adjust_ms, "delay after adjusting cfilt voltage in ms");
@@ -409,6 +413,18 @@ static unsigned short tx_digital_gain_reg[] = {
 	TABLA_A_CDC_TX10_VOL_CTL_GAIN,
 };
 
+#ifdef CONFIG_PANTECH_SND // kdkim for MBHC With GPIO(MSM GPIO)
+extern bool headset_gpio_config;
+#endif /* CONFIG_PANTECH_SND */
+
+#ifdef CONFIG_PANTECH_SND // [CHD] for bootsound headset path info
+static int headset_jack_status = 0;
+ 
+int wcd9310_headsetJackStatusGet(void)
+{
+	return headset_jack_status;
+}
+#endif
 static int tabla_codec_enable_charge_pump(struct snd_soc_dapm_widget *w,
 		struct snd_kcontrol *kcontrol, int event)
 {
@@ -2282,6 +2298,14 @@ static void tabla_codec_pause_hs_polling(struct snd_soc_codec *codec)
 		pr_debug("polling not active, nothing to pause\n");
 		return;
 	}
+    
+/* 2013-02-13 LS1@SND CASE#01075506 [JB] Hook key for headset iPhone 5 only is not suitable working(call Tx mute)
+    CR#431573 ASoC: wcd9310: Disable Mic Bias Pull down prior to enable micbias */
+#ifdef CONFIG_PANTECH_SND
+	snd_soc_update_bits(codec, tabla->mbhc_bias_regs.ctl_reg, 0x01, 0x01);
+	msleep(20);  // Original 250 -> LS1@SND Tunning value 20
+	snd_soc_update_bits(codec, tabla->mbhc_bias_regs.ctl_reg, 0x01, 0x00);
+#endif        
 
 	snd_soc_update_bits(codec, TABLA_A_CDC_MBHC_CLK_CTL, 0x8, 0x8);
 	pr_debug("%s: leave\n", __func__);
@@ -2878,6 +2902,12 @@ static void tabla_snd_soc_jack_report(struct tabla_priv *tabla,
 				      int mask)
 {
 	/* XXX: wake_lock_timeout()? */
+    
+/* 20130213 LS1@SND long button event issue fix during the sleep */
+#ifdef CONFIG_PANTECH_SND    
+	wake_lock_timeout(&snd_wakeup, msecs_to_jiffies(600)); // 600ms
+#endif
+
 	snd_soc_jack_report_no_dapm(jack, status, mask);
 }
 
@@ -5331,6 +5361,9 @@ static void tabla_codec_report_plug(struct snd_soc_codec *codec, int insertion,
 			}
 			pr_debug("%s: Reporting removal %d(%x)\n", __func__,
 				 jack_type, tabla->hph_status);
+#ifdef CONFIG_PANTECH_SND // [CHD] for bootsound headset path info
+			headset_jack_status = 0;
+#endif
 			tabla_snd_soc_jack_report(tabla,
 						  tabla->mbhc_cfg.headset_jack,
 						  tabla->hph_status,
@@ -5358,6 +5391,9 @@ static void tabla_codec_report_plug(struct snd_soc_codec *codec, int insertion,
 		if (tabla->mbhc_cfg.headset_jack) {
 			pr_debug("%s: Reporting insertion %d(%x)\n", __func__,
 				 jack_type, tabla->hph_status);
+#ifdef CONFIG_PANTECH_SND // [CHD] for bootsound headset path info
+			headset_jack_status = jack_type;
+#endif
 			tabla_snd_soc_jack_report(tabla,
 						  tabla->mbhc_cfg.headset_jack,
 						  tabla->hph_status,
@@ -6136,7 +6172,12 @@ static irqreturn_t tabla_dce_handler(int irq, void *data)
 		priv->buttons_pressed |= mask;
 		wcd9xxx_lock_sleep(core);
 		if (schedule_delayed_work(&priv->mbhc_btn_dwork,
-					  msecs_to_jiffies(400)) == 0) {
+/* 20130213 LS1@SND long button event issue fix during the sleep */
+#ifdef CONFIG_PANTECH_SND    
+					  msecs_to_jiffies(10)) == 0) {  // 10ms
+#else /* QCOM_original */
+					  msecs_to_jiffies(400)) == 0) {  
+#endif
 			WARN(1, "Button pressed twice without release"
 			     "event\n");
 			wcd9xxx_unlock_sleep(core);
@@ -6410,6 +6451,10 @@ void tabla_find_plug_and_report(struct snd_soc_codec *codec,
 		 * only report the mic line
 		 */
 		tabla_codec_report_plug(codec, 1, SND_JACK_HEADSET);
+
+/* 2012-01-08 LS1@SND CASE#00843051 [JB] Earphone tick noise problem
+    CRs-fixed: 423290([PATCH] ASoC: wcd9310: Avoid button polling noise on second insertion) */
+#ifdef CONFIG_PANTECH_SND            
 		if (!tabla->mbhc_micbias_switched &&
 			tabla_is_hph_pa_on(codec)) {
 			/*If the headphone path is on, switch the micbias
@@ -6417,6 +6462,8 @@ void tabla_find_plug_and_report(struct snd_soc_codec *codec,
 			tabla_codec_switch_micbias(codec, 1);
 			pr_debug("%s: HPH path is still up\n", __func__);
 		}
+#endif
+
 		msleep(100);
 		tabla_codec_start_hs_polling(codec);
 	} else if (plug_type == PLUG_TYPE_HIGH_HPH) {
@@ -7201,7 +7248,13 @@ static void tabla_hs_gpio_handler(struct snd_soc_codec *codec)
 					    0x08, 0x00);
 			/* Turn off override */
 			tabla_turn_onoff_override(codec, false);
+			
+/* 2012-01-08 LS1@SND CASE#00843051 [JB] Earphone tick noise problem
+    CRs-fixed: 423290([PATCH] ASoC: wcd9310: Avoid button polling noise on second insertion) */
+#ifdef CONFIG_PANTECH_SND            
 			tabla_codec_switch_micbias(codec, 0);
+#endif
+
 		}
 	}
 
@@ -7423,6 +7476,12 @@ int tabla_hs_detect(struct snd_soc_codec *codec,
 	tabla->in_gpio_handler = false;
 	tabla->current_plug = PLUG_TYPE_NONE;
 	tabla->lpi_enabled = false;
+#ifdef CONFIG_PANTECH_SND // kdkim for MBHC With GPIO(MSM GPIO)
+	if(!headset_gpio_config){
+		tabla->mbhc_cfg.gpio = 0;
+		tabla->mbhc_cfg.gpio_irq = 0;
+	}
+#endif /* CONFIG_PANTECH_SND */
 	tabla_get_mbhc_micbias_regs(codec, &tabla->mbhc_bias_regs);
 
 	/* Put CFILT in fast mode by default */
@@ -8249,6 +8308,9 @@ static int __devinit tabla_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	pr_err("tabla_probe\n");
+#ifdef CONFIG_PANTECH_SND    
+	wake_lock_init(&snd_wakeup, WAKE_LOCK_SUSPEND, "snd_wakeups");
+#endif    
 	if (wcd9xxx_get_intf_type() == WCD9XXX_INTERFACE_TYPE_SLIMBUS)
 		ret = snd_soc_register_codec(&pdev->dev, &soc_codec_dev_tabla,
 			tabla_dai, ARRAY_SIZE(tabla_dai));

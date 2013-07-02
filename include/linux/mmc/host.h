@@ -354,6 +354,34 @@ struct mmc_host {
 #endif
 
 	struct mmc_ios saved_ios;
+
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+	bool 			bkops_force_start;
+	int 			bkops_start_count;
+
+	bool			bkops_started;
+	bool			bkops_force_stoped;
+
+#define MMC_MAX_BKOPS_TIME	1000
+#define MMC_MAX_BKOPS_BLOCK_TIME	10000
+	struct timer_list	req_bkops_timer;
+	unsigned long		req_bkops_timer_value;
+	bool				req_bkops_timer_expired;
+
+	struct timer_list	req_bkops_block_timer;
+	bool				req_bkops_block_timer_expired;
+
+	ktime_t 		bkops_start_time;
+
+#define MMC_BKOPS_DIFF_MIN 0
+#define MMC_BKOPS_DIFF_MAX 1
+#define MMC_BKOPS_DIFF_SUM 2
+	s64 			bkops_diff_time[3];
+
+	bool			bkops_log_en;
+#endif
+
 	unsigned long		private[0] ____cacheline_aligned;
 };
 

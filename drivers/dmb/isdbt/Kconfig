@@ -1,0 +1,25 @@
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/kconfig-language.txt.
+#
+# ISDBT configuration.
+#
+
+menu "ISDBT"
+
+if SKY_ISDBT
+
+###################################################################
+# ISDBT BB Chip
+
+config SKY_ISDBT_SHARP_BB
+  bool "SKY_ISDBT_SHARP_BB"
+  default n
+  depends on SKY_ISDBT
+  ---help---
+   select this option for "ISDBT" hardware support
+
+
+endif # SKY_ISDBT
+
+endmenu

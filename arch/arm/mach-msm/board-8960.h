@@ -86,9 +86,20 @@ void msm8960_allocate_fb_region(void);
 void msm8960_set_display_params(char *prim_panel, char *ext_panel);
 void msm8960_pm8921_gpio_mpp_init(void);
 void msm8960_mdp_writeback(struct memtype_reserve *reserve_table);
+#if defined(CONFIG_PANTECH_CAMERA_FLASH) || (defined(CONFIG_MACH_MSM8960_VEGAPVW) && defined(CONFIG_PANTECH_PMIC_MAX17058)) || (defined(CONFIG_MACH_MSM8960_SIRIUSLTE) && defined(CONFIG_PANTECH_PMIC_MAX17058))
+#define MSM_8960_GSBI1_QUP_I2C_BUS_ID 1
+#endif
 #define MSM_8960_GSBI4_QUP_I2C_BUS_ID 4
 #define MSM_8960_GSBI3_QUP_I2C_BUS_ID 3
 #define MSM_8960_GSBI10_QUP_I2C_BUS_ID 10
+#ifdef CONFIG_SKY_DMB_I2C_HW
+#define MSM_8960_GSBI8_QUP_I2C_BUS_ID 8
+#endif
+#if defined(CONFIG_PANTECH_PMIC_MAX17058)
+#if defined(CONFIG_MACH_MSM8960_EF44S) || defined(T_MAGNUS)
+#define MSM_8960_GSBI9_QUP_I2C_BUS_ID 9
+#endif
+#endif
 
 extern struct msm_rtb_platform_data msm8960_rtb_pdata;
 extern struct msm_cache_dump_platform_data msm8960_cache_dump_pdata;

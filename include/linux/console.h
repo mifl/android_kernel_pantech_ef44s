@@ -158,6 +158,10 @@ extern bool console_suspend_enabled;
 extern void suspend_console(void);
 extern void resume_console(void);
 
+#ifdef CONFIG_PANTECH_ERR_CRASH_LOGGING
+extern void* get_log_buf_addr(void);
+#endif
+
 int mda_console_init(void);
 void prom_con_init(void);
 

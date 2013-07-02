@@ -373,6 +373,7 @@ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30-regulator.o
 obj-$(CONFIG_ARCH_MSM7X27A) += board-msm7x27a-regulator.o
 endif
 
+obj-$(CONFIG_PANTECH_ERR_CRASH_LOGGING) += sky_sys_reset.o pantech_apanic.o
 obj-$(CONFIG_ARCH_MSM8960) += mdm2.o mdm_common.o
 obj-$(CONFIG_MSM_RTB) += msm_rtb.o
 obj-$(CONFIG_MSM_CACHE_ERP) += cache_erp.o
@@ -390,3 +391,8 @@ ifdef CONFIG_MSM_CPR
 obj-$(CONFIG_DEBUG_FS) += msm_cpr-debug.o
 endif
 obj-$(CONFIG_MSM_CPU_PWRCTL) +=  msm_cpu_pwrctl.o
+
+# CONFIG_WIFI_CONTROL_FUNC
+ifdef CONFIG_PANTECH_WLAN_BRCM
+obj-$(CONFIG_SKY_PANMAC) += panmac.o
+endif

@@ -75,6 +75,18 @@ struct msm_camera_i2c_enum_conf_array {
 	enum msm_camera_i2c_data_type data_type;
 };
 
+#ifdef CONFIG_PANTECH_CAMERA
+int32_t msm_camera_i2c_rxdata_2(struct msm_camera_i2c_client *client,
+	unsigned char *rxdata, int data_length);
+#endif
+
+#ifdef CONFIG_PANTECH_CAMERA_TUNER
+typedef struct {
+	uint16_t reg_addr;
+	uint16_t reg_data;
+} msm_camera_i2c_reg_tune_t;
+#endif
+
 int32_t msm_camera_i2c_rxdata(struct msm_camera_i2c_client *client,
 	unsigned char *rxdata, int data_length);
 

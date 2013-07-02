@@ -410,10 +410,127 @@ static DEVICE_ATTR(perf, S_IRUGO | S_IWUSR,
 
 #endif
 
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+
+static ssize_t
+show_do_bkops(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct mmc_host *host = dev_get_drvdata(dev);
+	return snprintf(buf, PAGE_SIZE, "%d\n", host->bkops_force_start);
+}
+
+static ssize_t
+set_do_bkops(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t count)
+{	
+	int value;
+	struct mmc_host *host = dev_get_drvdata(dev);
+
+	sscanf(buf, "%d", &value);
+
+	spin_lock(&host->lock);
+
+	if(value)
+		host->bkops_force_start = true;
+	else
+		host->bkops_force_start = false;
+	
+	spin_unlock(&host->lock);
+
+	return count;
+}
+
+static DEVICE_ATTR(do_bkops, S_IRUGO | S_IWUSR,
+		show_do_bkops, set_do_bkops);
+
+static ssize_t
+show_bkops_count(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	s64 max_diff_time = 0, sum_diff_time = 0, min_diff_time = 0;
+	struct mmc_host *host = dev_get_drvdata(dev);
+
+	spin_lock(&host->lock);
+	max_diff_time = host->bkops_diff_time[MMC_BKOPS_DIFF_MAX];
+	min_diff_time = host->bkops_diff_time[MMC_BKOPS_DIFF_MIN];
+	sum_diff_time = host->bkops_diff_time[MMC_BKOPS_DIFF_SUM];
+	spin_unlock(&host->lock);
+	
+	return snprintf(buf, PAGE_SIZE, "started %d, count %d, chk_bk %d, do_bk %d, max %lld, min %lld, sum %lld\n", 
+		host->bkops_started, host->bkops_start_count, 
+		mmc_card_check_bkops(host->card), mmc_card_doing_bkops(host->card),
+		max_diff_time, min_diff_time, sum_diff_time);
+}
+
+static DEVICE_ATTR(bkops_count, S_IRUGO | S_IWUSR,
+		show_bkops_count, NULL);
+
+static ssize_t
+show_bkops_max_time(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct mmc_host *host = dev_get_drvdata(dev);
+	return snprintf(buf, PAGE_SIZE, "%lu\n", host->req_bkops_timer_value);
+}
+
+static ssize_t
+set_bkops_max_time(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t count)
+{	
+	unsigned long value;
+	struct mmc_host *host = dev_get_drvdata(dev);
+
+	sscanf(buf, "%lu", &value);
+
+	spin_lock(&host->lock);
+	host->req_bkops_timer_value = value;
+	spin_unlock(&host->lock);
+
+	return count;
+}
+
+static DEVICE_ATTR(bkops_max_time, S_IRUGO | S_IWUSR,
+		show_bkops_max_time, set_bkops_max_time);
+
+
+static ssize_t
+set_bkops_log_on(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t count)
+{	
+	int value;
+	struct mmc_host *host = dev_get_drvdata(dev);
+
+	sscanf(buf, "%d", &value);
+
+	spin_lock(&host->lock);
+
+	if(value)
+		host->bkops_log_en = true;
+	else
+		host->bkops_log_en = false;
+	
+	spin_unlock(&host->lock);
+
+	return count;
+}
+
+static DEVICE_ATTR(bkops_log_on, S_IRUGO | S_IWUSR,
+		NULL, set_bkops_log_on);
+
+#endif
+
 static struct attribute *dev_attrs[] = {
 #ifdef CONFIG_MMC_PERF_PROFILING
 	&dev_attr_perf.attr,
 #endif
+
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+	&dev_attr_do_bkops.attr,
+	&dev_attr_bkops_count.attr,
+	&dev_attr_bkops_max_time.attr,
+	&dev_attr_bkops_log_on.attr,
+#endif
+
 	NULL,
 };
 static struct attribute_group dev_attr_grp = {

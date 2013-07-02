@@ -4588,7 +4588,12 @@ static int __devinit hdmi_msm_probe(struct platform_device *pdev)
 		#undef GET_IRQ
 		return 0;
 	}
-
+//////////////////////////////////////////////////////////////////////////////////////////
+#if defined (CONFIG_MACH_MSM8960_EF44S)		/// EF44S only need registering fb2,it return.
+	fb_dev = msm_fb_add_device(pdev);
+	return 0;
+#endif	
+//////////////////////////////////////////////////////////////////////////////////////////
 	hdmi_msm_state->hdmi_app_clk = clk_get(&pdev->dev, "core_clk");
 	if (IS_ERR(hdmi_msm_state->hdmi_app_clk)) {
 		DEV_ERR("'core_clk' clk not found\n");

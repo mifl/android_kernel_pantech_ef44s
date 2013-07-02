@@ -36,6 +36,13 @@
 
 #include "smd_private.h"
 
+
+#ifdef CONFIG_PANTECH_ERR_CRASH_LOGGING
+#include "sky_sys_reset.h"
+
+extern int sky_reset_reason;
+#endif
+
 struct subsys_soc_restart_order {
 	const char * const *subsystem_list;
 	int count;
@@ -478,6 +485,24 @@ int subsystem_restart(const char *subsys_name)
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_PANTECH_ERR_CRASH_LOGGING
+    if(!strncmp(subsys_name, "lpass", 5)) 
+    {
+        sky_reset_reason=SYS_RESET_REASON_LPASS;
+    }
+    else if(!strncmp(subsys_name, "modem", 5)) 
+    {
+        sky_reset_reason=SYS_RESET_REASON_EXCEPTION;
+    }
+    else if(!strncmp(subsys_name, "dsps", 4)) 
+    {
+        sky_reset_reason=SYS_RESET_REASON_DSPS;
+    }
+    else if( (!strncmp(subsys_name, "riva", 4)) || (!strncmp(subsys_name, "wcnss", 5)) ) 
+    {
+        sky_reset_reason=SYS_RESET_REASON_RIVA;
+    }
+#endif
 	switch (restart_level) {
 
 	case RESET_SUBSYS_COUPLED:

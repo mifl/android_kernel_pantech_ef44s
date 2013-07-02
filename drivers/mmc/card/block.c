@@ -872,6 +872,12 @@ static int mmc_blk_issue_discard_rq(struct mmc_queue *mq, struct request *req)
 	from = blk_rq_pos(req);
 	nr = blk_rq_sectors(req);
 
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+	if (card->ext_csd.bkops_en)
+		card->sectors_changed += blk_rq_sectors(req);
+#endif
+
 	if (mmc_can_discard(card))
 		arg = MMC_DISCARD_ARG;
 	else if (mmc_can_trim(card))
@@ -1575,8 +1581,16 @@ static u8 mmc_blk_prep_packed_list(struct mmc_queue *mq, struct request *req)
 			break;
 		}
 
-		if (rq_data_dir(next) == WRITE)
+		if (rq_data_dir(next) == WRITE){
 			mq->num_of_potential_packed_wr_reqs++;
+
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+			if (card->ext_csd.bkops_en)
+				card->sectors_changed += blk_rq_sectors(next);
+#endif
+		}
+		
 		list_add_tail(&next->queuelist, &mq->mqrq_cur->packed_list);
 		cur = next;
 		reqs++;
@@ -1767,9 +1781,16 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 	if (!rqc && !mq->mqrq_prev->req)
 		return 0;
 
-	if (rqc)
-		reqs = mmc_blk_prep_packed_list(mq, rqc);
+	if (rqc){
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+		if ((card->ext_csd.bkops_en) && (rq_data_dir(rqc) == WRITE))
+			card->sectors_changed += blk_rq_sectors(rqc);
+#endif
 
+		reqs = mmc_blk_prep_packed_list(mq, rqc);
+	}
+	
 	do {
 		if (rqc) {
 			if (reqs >= packed_num)

@@ -67,6 +67,7 @@
 #include <linux/usb/msm_hsusb.h>
 #include <linux/ratelimit.h>
 #include "ci13xxx_udc.h"
+#include "f_pantech_android.h"
 
 
 /******************************************************************************
@@ -3096,6 +3097,13 @@ static const struct usb_ep_ops usb_ep_ops = {
 	.fifo_flush    = ep_fifo_flush,
 };
 
+#ifdef CONFIG_ANDROID_PANTECH_USB_MANAGER
+extern void pantech_init_device_mode_change(void);
+extern bool b_pantech_usb_module;
+extern int pantech_vbus_connect(void);
+extern int pantech_vbus_disconnect(void);
+#endif
+
 /******************************************************************************
  * GADGET block
  *****************************************************************************/
@@ -3114,20 +3122,37 @@ static int ci13xxx_vbus_session(struct usb_gadget *_gadget, int is_active)
 		gadget_ready = 1;
 	spin_unlock_irqrestore(udc->lock, flags);
 
+	printk(KERN_INFO "vbus_gadget SOFT connect : [%d]!!!!!!\n", udc->softconnect);
 	if (gadget_ready) {
 		if (is_active) {
+			printk(KERN_INFO "vbus_gadget connect!!!!!!\n");
 			pm_runtime_get_sync(&_gadget->dev);
 			hw_device_reset(udc);
-			if (udc->softconnect)
+			if (udc->softconnect){
 				hw_device_state(udc->ep0out.qh.dma);
+				
+#ifdef CONFIG_ANDROID_PANTECH_USB_MANAGER
+				if(b_pantech_usb_module){
+						pantech_vbus_connect();
+				}
+#endif
+			}
+
 		} else {
+			printk(KERN_INFO "vbus_gadget disconnect!!!!!!\n");
 			hw_device_state(0);
 			_gadget_stop_activity(&udc->gadget);
 			if (udc->udc_driver->notify_event)
 				udc->udc_driver->notify_event(udc,
 					CI13XXX_CONTROLLER_DISCONNECT_EVENT);
 			pm_runtime_put_sync(&_gadget->dev);
+#ifdef CONFIG_ANDROID_PANTECH_USB_MANAGER
+			if(b_pantech_usb_module){
+				pantech_vbus_disconnect();
 		}
+#endif
+
+	}
 	}
 
 	return 0;
@@ -3146,6 +3171,10 @@ static int ci13xxx_pullup(struct usb_gadget *_gadget, int is_active)
 {
 	struct ci13xxx *udc = container_of(_gadget, struct ci13xxx, gadget);
 	unsigned long flags;
+
+#ifdef CONFIG_ANDROID_PANTECH_USB_MANAGER
+	pantech_init_device_mode_change();
+#endif
 
 	spin_lock_irqsave(udc->lock, flags);
 	udc->softconnect = is_active;

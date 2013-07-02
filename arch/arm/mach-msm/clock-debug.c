@@ -193,10 +193,10 @@ void clock_debug_print_enabled(void)
 {
 	unsigned i;
 	int cnt = 0;
-
+#if 0  // P14533. For debug sleep issue
 	if (likely(!debug_suspend))
 		return;
-
+#endif
 	pr_info("Enabled clocks:\n");
 	for (i = 0; i < num_msm_clocks; i++)
 		cnt += clock_debug_print_clock(msm_clocks[i].clk);

@@ -1,0 +1,113 @@
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/kconfig-language.txt.
+#
+# TDMB configuration.
+#
+
+menu "TDMB - Terrestrial Digital Multimedia Broadcasting"
+
+###################################################################
+# TDMB BB Chip
+
+config SKY_TDMB_INC_BB
+  bool "SKY_TDMB_INC_BB"
+  default n
+  depends on SKY_TDMB
+  ---help---
+   select this option for "TDMB" hardware support
+
+
+if SKY_TDMB_INC_BB
+
+config SKY_TDMB_INC_BB_T3700
+  bool "SKY_TDMB_INC_BB_T3700"
+  default n
+  depends on SKY_TDMB_INC_BB
+  ---help---
+   select this option for "TDMB" hardware support
+
+
+config SKY_TDMB_INC_BB_T3900
+  bool "SKY_TDMB_INC_BB_T3900"
+  default n
+  depends on SKY_TDMB_INC_BB
+  ---help---
+   select this option for "TDMB" hardware support
+
+endif # SKY_TDMB_INC_BB
+
+
+config SKY_TDMB_FCI_BB
+  bool "SKY_TDMB_FCI_BB"
+  default n
+  depends on SKY_TDMB
+  ---help---
+   select this option for "TDMB" hardware support
+
+
+if SKY_TDMB_FCI_BB
+
+config SKY_TDMB_FCI_BB_FC8050
+  bool "SKY_TDMB_FCI_BB_FC8050"
+  default n
+  depends on SKY_TDMB_FCI_BB
+  ---help---
+   select this option for "TDMB" hardware support
+
+endif # SKY_TDMB_FCI_BB
+
+
+config SKY_TDMB_TCC_BB
+  bool "SKY_TDMB_TCC_BB"
+  default n
+  depends on SKY_TDMB
+  ---help---
+   select this option for "TDMB" hardware support
+
+if SKY_TDMB_TCC_BB
+
+config SKY_TDMB_TCC_BB_TCC3170
+  bool "SKY_TDMB_TCC_BB_TCC3170"
+  default n
+  depends on SKY_TDMB_TCC_BB
+  ---help---
+   select this option for "TDMB" hardware support
+
+endif # SKY_TDMB_TCC_BB
+
+
+config SKY_TDMB_RTV_BB
+  bool "SKY_TDMB_RTV_BB"
+  default n
+  depends on SKY_TDMB
+  ---help---
+   select this option for "TDMB" hardware support
+
+
+if SKY_TDMB_RTV_BB
+
+config SKY_TDMB_RTV_BB_MTV350
+  bool "SKY_TDMB_RTV_BB_MTV350"
+  default n
+  depends on SKY_TDMB_RTV_BB
+  ---help---
+   select this option for "TDMB" hardware support
+
+endif # SKY_TDMB_RTV_BB
+
+
+###################################################################
+# TDMB ANT PATH
+
+config SKY_TDMB_MICRO_USB_DETECT
+  bool "SKY_TDMB_MICRO_USB_DETECT"
+  default n
+  depends on SKY_TDMB
+  ---help---
+   select this option for "TDMB" hardware support
+
+
+###################################################################
+
+endmenu

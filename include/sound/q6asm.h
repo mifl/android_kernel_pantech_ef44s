@@ -150,6 +150,11 @@ struct audio_client {
 	struct mutex	       cmd_lock;
 
 	atomic_t		cmd_state;
+/* 2013-02-25 107100J(1743J) Manual CR#434279 merge : Crashed occur during Audio Stability run 
+    Device crashes when Audio Stability is run, and where commands of Volume and Close are sent consecutively*/
+#ifdef CONFIG_PANTECH_SND
+	atomic_t		cmd_close_state;
+#endif
 	atomic_t		time_flag;
 	atomic_t		nowait_cmd_cnt;
 	wait_queue_head_t	cmd_wait;

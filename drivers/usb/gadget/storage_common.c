@@ -924,8 +924,12 @@ static ssize_t fsg_store_file(struct device *dev, struct device_attribute *attr,
 	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
 	int		rc = 0;
 
-
-#ifndef CONFIG_USB_ANDROID_MASS_STORAGE
+/* pooyi 20120329 
+	when ICS UMS turn off, this code return BUSY, it make a turn off problem
+	GB and HC is not used this code.
+	ICS version blocked this code.
+*/
+#if 0//ndef CONFIG_USB_ANDROID_MASS_STORAGE
 	/* disabled in android because we need to allow closing the backing file
 	 * if the media was removed
 	 */

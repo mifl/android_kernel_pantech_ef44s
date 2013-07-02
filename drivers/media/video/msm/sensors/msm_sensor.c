@@ -352,6 +352,10 @@ int32_t msm_sensor_release(struct msm_sensor_ctrl_t *s_ctrl)
 	long fps = 0;
 	uint32_t delay = 0;
 	CDBG("%s called\n", __func__);
+#ifdef CONFIG_PANTECH_CAMERA
+	if(s_ctrl->func_tbl->sensor_lens_stability)
+		s_ctrl->func_tbl->sensor_lens_stability(s_ctrl);
+#endif
 	s_ctrl->func_tbl->sensor_stop_stream(s_ctrl);
 	if (s_ctrl->curr_res != MSM_SENSOR_INVALID_RES) {
 		fps = s_ctrl->msm_sensor_reg->
@@ -401,15 +405,30 @@ int32_t msm_sensor_get_csi_params(struct msm_sensor_ctrl_t *s_ctrl,
 	return 0;
 }
 
+#ifdef CONFIG_PANTECH_CAMERA
+struct sensor_cfg_data cdata;
+#endif
 int32_t msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 {
+#ifndef CONFIG_PANTECH_CAMERA
 	struct sensor_cfg_data cdata;
+#endif
 	long   rc = 0;
+#ifdef CONFIG_PANTECH_CAMERA
+	mutex_lock(s_ctrl->msm_sensor_mutex);
+	if (copy_from_user(&cdata,
+		(void *)argp,
+		sizeof(struct sensor_cfg_data))) {
+		mutex_unlock(s_ctrl->msm_sensor_mutex);
+		return -EFAULT;
+	}
+#else
 	if (copy_from_user(&cdata,
 		(void *)argp,
 		sizeof(struct sensor_cfg_data)))
 		return -EFAULT;
 	mutex_lock(s_ctrl->msm_sensor_mutex);
+#endif
 	CDBG("msm_sensor_config: cfgtype = %d\n",
 	cdata.cfgtype);
 		switch (cdata.cfgtype) {
@@ -470,6 +489,11 @@ int32_t msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 			break;
 
 		case CFG_SET_EFFECT:
+#ifdef CONFIG_PANTECH_CAMERA
+			if (s_ctrl->func_tbl->sensor_set_effect) {
+    			    rc = s_ctrl->func_tbl->sensor_set_effect(s_ctrl, cdata.cfg.effect);
+			}
+#endif
 			break;
 
 		case CFG_SENSOR_INIT:
@@ -533,6 +557,132 @@ int32_t msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 				rc = -EFAULT;
 			break;
 
+#ifdef CONFIG_PANTECH_CAMERA_TUNER
+        case CFG_SET_TUNER:
+            printk("%s CFG_SET_TUNER\n ",__func__);
+            rc = s_ctrl->func_tbl->sensor_set_tuner(cdata.cfg.tuner);
+            break;
+#endif
+#ifdef CONFIG_PANTECH_CAMERA
+        case CFG_SET_BRIGHTNESS:
+            if (s_ctrl->func_tbl->sensor_set_brightness) {
+                rc = s_ctrl->func_tbl->sensor_set_brightness(s_ctrl, cdata.cfg.brightness);
+            }
+            break;
+        case CFG_SET_EXPOSURE_MODE:
+            if (s_ctrl->func_tbl->sensor_set_exposure_mode) {
+                rc = s_ctrl->func_tbl->sensor_set_exposure_mode(s_ctrl, cdata.cfg.exposure);
+            }            
+            break;
+        case CFG_SET_WB:
+            if (s_ctrl->func_tbl->sensor_set_wb) {
+                rc = s_ctrl->func_tbl->sensor_set_wb(s_ctrl, cdata.cfg.whitebalance);
+            }                        
+            break;
+        case CFG_SET_PREVIEW_FPS:
+            if (s_ctrl->func_tbl->sensor_set_preview_fps) {
+                rc = s_ctrl->func_tbl->sensor_set_preview_fps(s_ctrl, cdata.cfg.preview_fps);
+            }            
+            break;
+        case CFG_AUTO_FOCUS:
+            if (s_ctrl->func_tbl->sensor_set_auto_focus) {
+                rc = s_ctrl->func_tbl->sensor_set_auto_focus(s_ctrl, cdata.cfg.focus.dir);
+            }            
+            break;	
+        case CFG_FOCUS_MODE:
+            if (s_ctrl->func_tbl->sensor_set_focus_mode) {
+                rc = s_ctrl->func_tbl->sensor_set_focus_mode(s_ctrl, cdata.cfg.focus.dir);
+            }            
+            break;	
+        case CFG_SET_SCENE_MODE:
+            if (s_ctrl->func_tbl->sensor_set_scene_mode) {
+                rc = s_ctrl->func_tbl->sensor_set_scene_mode(s_ctrl, cdata.cfg.scene_mode);
+            }            
+            break;
+        case CFG_SET_REFLECT:
+            if (s_ctrl->func_tbl->sensor_set_reflect) {
+                rc = s_ctrl->func_tbl->sensor_set_reflect(s_ctrl, cdata.cfg.reflect);
+            }          
+            break;    	
+        case CFG_SET_ANTIBANDING:
+            if (s_ctrl->func_tbl->sensor_set_antibanding) {
+                rc = s_ctrl->func_tbl->sensor_set_antibanding(s_ctrl, cdata.cfg.antibanding);
+            }	
+            break;
+        case CFG_SET_ANTISHAKE:
+            if (s_ctrl->func_tbl->sensor_set_antishake) {
+                rc = s_ctrl->func_tbl->sensor_set_antishake(s_ctrl, cdata.cfg.antishake);
+            }	
+            break;
+        case CFG_SET_LED_MODE:
+            if (s_ctrl->func_tbl->sensor_set_led_mode) {
+                rc = s_ctrl->func_tbl->sensor_set_led_mode(s_ctrl, cdata.cfg.led_mode);
+            }	
+            break;
+        case CFG_SET_AF_CHECK:
+            if (s_ctrl->func_tbl->sensor_check_af) {
+                rc = s_ctrl->func_tbl->sensor_check_af(s_ctrl, cdata.cfg.focus.dir);
+            }          
+            break;    
+        case CFG_SET_CONTINUOUS_AF:
+            if (s_ctrl->func_tbl->sensor_set_continuous_af) {
+                rc = s_ctrl->func_tbl->sensor_set_continuous_af(s_ctrl, cdata.cfg.continuous_af);
+            }          
+            break;    
+        case CFG_SET_FOCUS_RECT:
+            if (s_ctrl->func_tbl->sensor_set_focus_rect) {
+                rc = s_ctrl->func_tbl->sensor_set_focus_rect(s_ctrl, cdata.cfg.focus_rect, (int8_t *)cdata.frame_info);
+            }          
+            break;    
+        case CFG_SET_HDR:
+            if (s_ctrl->func_tbl->sensor_set_hdr) {
+                rc = s_ctrl->func_tbl->sensor_set_hdr(s_ctrl);
+            }          
+            break;    
+        case CFG_SET_METERING_AREA:
+            if (s_ctrl->func_tbl->sensor_set_metering_area) {
+                rc = s_ctrl->func_tbl->sensor_set_metering_area(s_ctrl, cdata.cfg.focus_rect, (int8_t *)cdata.frame_info);
+            }          
+            break;    
+        case CFG_SET_OJT:
+            if (s_ctrl->func_tbl->sensor_set_ojt_ctrl) {
+                rc = s_ctrl->func_tbl->sensor_set_ojt_ctrl(s_ctrl, cdata.cfg.ojt);
+            }	            
+            break;
+#if 1 //def F_PANTECH_CAMERA_FIX_CFG_AE_AWB_LOCK
+        case CFG_SET_AEC_LOCK:
+            if (s_ctrl->func_tbl->sensor_set_aec_lock) {
+                rc = s_ctrl->func_tbl->sensor_set_aec_lock(s_ctrl, cdata.cfg.is_lock);
+            }          
+            break;    
+        case CFG_SET_AWB_LOCK:
+            if (s_ctrl->func_tbl->sensor_set_awb_lock) {
+                rc = s_ctrl->func_tbl->sensor_set_awb_lock(s_ctrl, cdata.cfg.is_lock);
+            }          
+            break;    
+#endif
+       case CFG_GET_FRAME_INFO:
+            if (s_ctrl->func_tbl->sensor_get_frame_info) {
+                rc = s_ctrl->func_tbl->sensor_get_frame_info(s_ctrl, argp, (int8_t *)cdata.frame_info);
+
+                if(copy_to_user((void *)argp,
+                		&cdata,
+                		sizeof(cdata)))
+                		return -EFAULT;
+
+            }      
+            break;    
+	case CFG_GET_CALIB_DATA:
+	     if (s_ctrl->func_tbl->sensor_get_eeprom_data == NULL) break;
+	     rc = s_ctrl->func_tbl->sensor_get_eeprom_data(s_ctrl, &cdata);
+	     if (rc < 0)
+		 break;
+	     if (copy_to_user((void *)argp,
+				&cdata,
+				sizeof(cdata)))
+				rc = -EFAULT;
+	     break;			
+#endif
 		default:
 			rc = -EFAULT;
 			break;
@@ -604,11 +754,13 @@ int32_t msm_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 		goto enable_vreg_failed;
 	}
 
+#ifndef CONFIG_PANTECH_CAMERA
 	rc = msm_camera_config_gpio_table(data, 1);
 	if (rc < 0) {
 		pr_err("%s: config gpio failed\n", __func__);
 		goto config_gpio_failed;
 	}
+#endif
 
 	if (s_ctrl->clk_rate != 0)
 		cam_clk_info->clk_rate = s_ctrl->clk_rate;
@@ -631,8 +783,10 @@ int32_t msm_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
 	return rc;
 
 enable_clk_failed:
+#ifndef CONFIG_PANTECH_CAMERA
 		msm_camera_config_gpio_table(data, 0);
 config_gpio_failed:
+#endif
 	msm_camera_enable_vreg(&s_ctrl->sensor_i2c_client->client->dev,
 			s_ctrl->sensordata->sensor_platform_info->cam_vreg,
 			s_ctrl->sensordata->sensor_platform_info->num_vreg,
@@ -663,7 +817,9 @@ int32_t msm_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 		data->sensor_platform_info->ext_power_ctrl(0);
 	msm_cam_clk_enable(&s_ctrl->sensor_i2c_client->client->dev,
 		cam_clk_info, &s_ctrl->cam_clk, ARRAY_SIZE(cam_clk_info), 0);
+#ifndef CONFIG_PANTECH_CAMERA
 	msm_camera_config_gpio_table(data, 0);
+#endif
 	msm_camera_enable_vreg(&s_ctrl->sensor_i2c_client->client->dev,
 		s_ctrl->sensordata->sensor_platform_info->cam_vreg,
 		s_ctrl->sensordata->sensor_platform_info->num_vreg,
@@ -681,6 +837,11 @@ int32_t msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int32_t rc = 0;
 	uint16_t chipid = 0;
+#ifdef CONFIG_PANTECH_CAMERA
+	if(s_ctrl->sensor_id_info->sensor_id == 0)
+		return 0;
+#endif
+
 	rc = msm_camera_i2c_read(
 			s_ctrl->sensor_i2c_client,
 			s_ctrl->sensor_id_info->sensor_id_reg_addr, &chipid,

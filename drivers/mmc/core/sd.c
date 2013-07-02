@@ -758,7 +758,9 @@ int mmc_sd_get_cid(struct mmc_host *host, u32 ocr, u32 *cid, u32 *rocr)
 	    MMC_CAP_SET_XPC_180))
 		ocr |= SD_OCR_XPC;
 
+#ifndef CONFIG_PANTECH_SDCARD_HIGH_VOLTAGE_FIX // 20120127 jylee
 try_again:
+#endif
 	err = mmc_send_app_op_cond(host, ocr, rocr);
 	if (err)
 		return err;
@@ -767,6 +769,7 @@ try_again:
 	 * In case CCS and S18A in the response is set, start Signal Voltage
 	 * Switch procedure. SPI mode doesn't support CMD11.
 	 */
+#ifndef CONFIG_PANTECH_SDCARD_HIGH_VOLTAGE_FIX 
 	if (!mmc_host_is_spi(host) && rocr &&
 	   ((*rocr & 0x41000000) == 0x41000000)) {
 		err = mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_180, true);
@@ -775,7 +778,7 @@ try_again:
 			goto try_again;
 		}
 	}
-
+#endif
 	if (mmc_host_is_spi(host))
 		err = mmc_send_cid(host, cid);
 	else

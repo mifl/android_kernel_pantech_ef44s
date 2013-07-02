@@ -59,7 +59,12 @@ static DEFINE_MUTEX(misc_mtx);
 /*
  * Assigned numbers, used for dynamic minors
  */
+#define F_PANTECH_MISC_COUNT_UP
+#ifdef F_PANTECH_MISC_COUNT_UP
+#define DYNAMIC_MINORS 96 /* Size up for Additional misc driver(Pantech Inc.) */
+#else
 #define DYNAMIC_MINORS 64 /* like dynamic majors */
+#endif
 static DECLARE_BITMAP(misc_minors, DYNAMIC_MINORS);
 
 #ifdef CONFIG_PROC_FS

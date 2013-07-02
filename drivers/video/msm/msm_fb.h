@@ -46,6 +46,18 @@
 #include "msm_fb_panel.h"
 #include "mdp.h"
 
+/* lived, 2013.02.13 bug fix for mdp bandwidth request */
+//#define PANTECH_LCD_BUG_FIX_MDP_BANDWIDTH_REQUEST
+
+#define CONFIG_F_SKYDISP_SILENT_BOOT //silent boot p13832@shji 		
+#ifdef CONFIG_F_SKYDISP_SILENT_BOOT
+extern int backlight_value;
+#endif
+
+#if defined(CONFIG_MACH_MSM8960_MAGNUS) || defined(CONFIG_MACH_MSM8960_EF44S)
+#define CONFIG_LCD_CABC_CONTROL
+#endif
+
 #define MSM_FB_DEFAULT_PAGE_SIZE 2
 #define MFD_KEY  0x11161126
 #define MSM_FB_MAX_DEV_LIST 32
@@ -224,6 +236,9 @@ int msm_fb_check_frame_rate(struct msm_fb_data_type *mfd,
 #ifdef CONFIG_FB_MSM_LOGO
 #define INIT_IMAGE_FILE "/initlogo.rle"
 int load_565rle_image(char *filename, bool bf_supported);
+#if defined(CONFIG_MACH_MSM8960_EF44S)
+#define INIT_RESET_IMAGE_FILE "/resetlogo.rle"
+#endif
 #endif
 
 #endif /* MSM_FB_H */

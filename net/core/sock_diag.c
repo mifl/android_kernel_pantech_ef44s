@@ -126,6 +126,11 @@ static int __sock_diag_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 	if (nlmsg_len(nlh) < sizeof(*req))
 		return -EINVAL;
 
+//#ifdef FEATURE_SKY_DS_GOOGLE_PATCH		
+  if (req->sdiag_family >= AF_MAX)
+  return -EINVAL;
+//#endif FEATURE_SKY_DS_GOOGLE_PATCH
+
 	hndl = sock_diag_lock_handler(req->sdiag_family);
 	if (hndl == NULL)
 		err = -ENOENT;

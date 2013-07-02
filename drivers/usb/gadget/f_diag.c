@@ -27,6 +27,17 @@
 #include <linux/workqueue.h>
 #include <linux/debugfs.h>
 
+#ifdef F_PANTECH_UTS_POWER_UP
+#include <mach/restart.h>
+#include <mach/msm_smsm.h>
+unsigned int pwron_key_request1[3] = {0x20, 0x00, 0xb5}; // UTS activation
+unsigned int pwron_key_request2[3] = {0x20, 0x01, 0x51}; // press power key long
+int ready_status = 0;
+#endif
+
+//tarial bug fix [execute work queue fail after changing usb mode
+#define FEATURE_PANTECH_CLEAR_WORK_QUEUE
+
 static DEFINE_SPINLOCK(ch_lock);
 static LIST_HEAD(usb_diag_ch_list);
 
@@ -386,6 +397,11 @@ int usb_diag_read(struct usb_diag_ch *ch, struct diag_request *d_req)
 	unsigned long flags;
 	struct usb_request *req;
 
+#ifdef F_PANTECH_UTS_POWER_UP
+	static oem_pm_smem_vendor1_data_type *smem_id_vendor1_ptr; 
+	unsigned int pwron_read_buffer[3];	
+#endif	
+	
 	if (!ctxt)
 		return -ENODEV;
 
@@ -418,6 +434,35 @@ int usb_diag_read(struct usb_diag_ch *ch, struct diag_request *d_req)
 				" read request\n", __func__);
 		return -EIO;
 	}
+
+	//printk(KERN_ERR "[%s] tarial test diag read end !!!\n", __func__);
+
+
+#ifdef F_PANTECH_UTS_POWER_UP
+	pwron_read_buffer[0] = (int)*(d_req->buf);
+	pwron_read_buffer[1] = (int)*(d_req->buf+1);
+	pwron_read_buffer[2] = (int)*(d_req->buf+2);
+
+	
+	//printk(KERN_ERR "usb_diag_read, buf = 0x%x, 0x%x, 0x%x \n",(int)*(d_req->buf), (int)*(d_req->buf+1), (int)*(d_req->buf+2));
+
+	smem_id_vendor1_ptr = (oem_pm_smem_vendor1_data_type*)smem_alloc(SMEM_ID_VENDOR1, 
+		sizeof(oem_pm_smem_vendor1_data_type));
+	//printk(KERN_ERR "smem_id_vendor1_ptr->power_on_mode = %d\n", smem_id_vendor1_ptr->power_on_mode);
+	
+	if(smem_id_vendor1_ptr->power_on_mode == 0) {
+		//printk(KERN_ERR "ready_status= %d", ready_status);
+		if(memcmp( pwron_read_buffer, pwron_key_request2, sizeof(pwron_key_request2)) == 0 && ready_status == 1) {
+			//printk(KERN_ERR "Power key long press detect!!! Reset start!!! Please wait...\n");
+			ready_status = 0;
+			msm_restart(0, 0);
+		}
+		else if(memcmp( pwron_read_buffer, pwron_key_request1, sizeof(pwron_key_request1)) == 0) {
+			//printk(KERN_ERR "UTS activation!!!\n");
+			ready_status = 1;
+		}
+	}
+#endif
 
 	return 0;
 }
@@ -544,6 +589,9 @@ static int diag_function_set_alt(struct usb_function *f,
 	dev->configured = 1;
 	spin_unlock_irqrestore(&dev->lock, flags);
 
+#ifdef CONFIG_ANDROID_PANTECH_USB_MANAGER
+	usb_interface_enum_cb(DIAG_TYPE_FLAG);
+#endif
 	return rc;
 }
 
@@ -551,6 +599,11 @@ static void diag_function_unbind(struct usb_configuration *c,
 		struct usb_function *f)
 {
 	struct diag_context *ctxt = func_to_diag(f);
+
+#ifdef FEATURE_PANTECH_CLEAR_WORK_QUEUE
+	//tarial bug fix
+	cancel_work_sync(&ctxt->config_work);
+#endif
 
 	if (gadget_is_dualspeed(c->cdev->gadget))
 		usb_free_descriptors(f->hs_descriptors);
@@ -566,6 +619,17 @@ static int diag_function_bind(struct usb_configuration *c,
 	struct diag_context *ctxt = func_to_diag(f);
 	struct usb_ep *ep;
 	int status = -ENODEV;
+
+#if defined(CONFIG_ANDROID_PANTECH_USB)
+//	if(()pantech_usb_carrier != CARRIER_QUALCOMM) && b_pantech_usb_module){
+	if(pantech_usb_carrier != CARRIER_QUALCOMM){
+		intf_desc.bInterfaceSubClass = 0xE0;
+		intf_desc.bInterfaceProtocol = 0x10;
+	}else{
+		intf_desc.bInterfaceSubClass = 0xFF;
+		intf_desc.bInterfaceProtocol = 0xFF;
+	}
+#endif
 
 	intf_desc.bInterfaceNumber =  usb_interface_id(c, f);
 

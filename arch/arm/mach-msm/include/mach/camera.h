@@ -27,11 +27,22 @@
 #include <linux/ion.h>
 #include <mach/iommu_domains.h>
 
-#define CONFIG_MSM_CAMERA_DEBUG
+#if defined(CONFIG_PANTECH_CAMERA) && !defined(FEATURE_AARM_RELEASE_MODE)
+#define F_PANTECH_CAMERA_LOG_PRINTK
+#endif
+//#define CONFIG_MSM_CAMERA_DEBUG
 #ifdef CONFIG_MSM_CAMERA_DEBUG
-#define CDBG(fmt, args...) pr_debug(fmt, ##args)
+#define CDBG(fmt, args...) printk(KERN_INFO "msm_camera: " fmt, ##args)
+//#define CDBG(fmt, args...) pr_debug(fmt, ##args)
 #else
 #define CDBG(fmt, args...) do { } while (0)
+#endif
+#ifdef F_PANTECH_CAMERA_LOG_PRINTK
+#define SKYCDBG(fmt, args...) printk(KERN_INFO "SKYCDBG: " fmt, ##args)
+#define SKYCERR(fmt, args...) printk(KERN_ERR "SKYCERR: " fmt, ##args)
+#else
+#define SKYCDBG(fmt, args...) do{}while(0)
+#define SKYCERR(fmt, args...) do{}while(0)
 #endif
 
 #define PAD_TO_2K(a, b) ((!b) ? a : (((a)+2047) & ~2047))
@@ -157,6 +168,9 @@ struct msm_camera_csi2_params {
 #define VFE31_OUTPUT_MODE_P (0x1 << 3)
 #define VFE31_OUTPUT_MODE_T (0x1 << 4)
 #define VFE31_OUTPUT_MODE_P_ALL_CHNLS (0x1 << 5)
+#endif
+#if 1//#ifdef F_PANTECH_CAMERA_1080P_PREVIEW	
+#define CSI_RESERVED_DATA 0x13
 #endif
 
 struct msm_vfe_phy_info {

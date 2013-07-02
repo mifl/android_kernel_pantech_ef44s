@@ -51,6 +51,9 @@
 #define PPSS_TIMER0_32KHZ_REG	0x1004
 #define PPSS_TIMER0_20MHZ_REG	0x0804
 
+#ifdef CONFIG_PANTECH_ERR_CRASH_LOGGING
+#define MODULE_NAME			"dsps_8960"
+#endif
 /**
  *  Driver Context
  *

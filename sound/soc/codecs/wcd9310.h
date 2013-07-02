@@ -191,6 +191,10 @@ struct anc_header {
 extern int tabla_mclk_enable(struct snd_soc_codec *codec, int mclk_enable,
 			     bool dapm);
 
+#ifdef CONFIG_PANTECH_SND // [CHD] for bootsound headset path info
+int wcd9310_headsetJackStatusGet(void);
+#endif
+
 extern void *tabla_mbhc_cal_btn_det_mp(const struct tabla_mbhc_btn_detect_cfg
 				       *btn_det,
 				       const enum tabla_mbhc_btn_det_mem mem);

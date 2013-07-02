@@ -45,6 +45,9 @@ extern u32 dbg_force_ov1_blt;
 #define CS_CONTROLLER_0 0x0707ffff
 #define CS_CONTROLLER_1 0x03073f3f
 
+/* PLM 1430  kangms p14974 130215 */
+#define CONFIG_QUALCOMM_BUG_FIX_BLENDING
+
 enum {
 	OVERLAY_PERF_LEVEL1 = 1,
 	OVERLAY_PERF_LEVEL2,
@@ -939,4 +942,11 @@ int mdp4_overlay_mdp_pipe_req(struct mdp4_overlay_pipe *pipe,
 int mdp4_overlay_mdp_perf_req(struct msm_fb_data_type *mfd,
 			      struct mdp4_overlay_pipe *plist);
 void mdp4_overlay_mdp_perf_upd(struct msm_fb_data_type *mfd, int flag);
+
+#if defined(CONFIG_QUALCOMM_BUG_FIX_BLENDING)
+int mdp4_update_base_blend(struct msm_fb_data_type *mfd,
+				struct mdp_blend_cfg *mdp_blend_cfg);
+u32 mdp4_get_mixer_num(u32 panel_type);
+#endif
+
 #endif /* MDP_H */

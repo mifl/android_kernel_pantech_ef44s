@@ -35,4 +35,8 @@ struct pm8xxx_pwrkey_platform_data  {
 	u32  wakeup;
 };
 
+#if defined(CONFIG_PANTECH_PMIC_PWRKEY)
+int get_pwrkey_rt_status(void);
+#endif
+
 #endif /* __PMIC8XXX_PWRKEY_H__ */

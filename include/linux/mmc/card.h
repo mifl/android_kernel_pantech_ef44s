@@ -269,6 +269,15 @@ struct mmc_card {
 #define MMC_QUIRK_LONG_READ_TIME (1<<9)		/* Data read time > CSD says */
 						/* byte mode */
 #define MMC_QUIRK_INAND_DATA_TIMEOUT  (1<<8)    /* For incorrect data timeout */
+
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+/* 20121221 LS1-JHM modified : disabling BKOPS for samsung eMMC with firmware revision 0x12 (P18) */
+#define MMC_QUIRK_NO_BKOPS  (1<<24)
+/* 20121221 LS1-JHM modified : disabling TRIM for samsung eMMC with firmware revision 0x06 (P06) */
+#define MMC_QUIRK_NO_TRIM  (1<<25)
+#endif
+
 	unsigned int    	poweroff_notify_state;	/* eMMC4.5 notify
 							   feature */
 #define MMC_NO_POWER_NOTIFICATION	0
@@ -305,6 +314,13 @@ struct mmc_card {
 	unsigned int    nr_parts;
 
 	struct mmc_wr_pack_stats wr_pack_stats; /* packed commands stats*/
+
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+#define BKOPS_MIN_SECTORS_TO_START 204800 /*204800  100MB */
+	unsigned int		sectors_changed;
+#endif
+
 };
 
 /*

@@ -29,21 +29,38 @@
 #include "board-8960.h"
 
 #ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
+#if defined(CONFIG_MACH_MSM8960_EF44S) || defined(CONFIG_MACH_MSM8960_VEGAPVW) ||  defined(CONFIG_MACH_MSM8960_MAGNUS)
+#define MSM_FB_PRIM_BUF_SIZE \
+		(roundup((roundup(1280, 32) * roundup(720, 32) * 4), 4096) * 3)
+			/* 4 bpp x 3 pages */
+#else
 #define MSM_FB_PRIM_BUF_SIZE \
 		(roundup((roundup(1920, 32) * roundup(1200, 32) * 4), 4096) * 3)
 			/* 4 bpp x 3 pages */
+#endif
+#else
+#if defined(CONFIG_MACH_MSM8960_EF44S) || defined(CONFIG_MACH_MSM8960_VEGAPVW) ||  defined(CONFIG_MACH_MSM8960_MAGNUS)
+#define MSM_FB_PRIM_BUF_SIZE \
+		(roundup((roundup(1280, 32) * roundup(720, 32) * 4), 4096) * 2)
+			/* 4 bpp x 2 pages */
 #else
 #define MSM_FB_PRIM_BUF_SIZE \
 		(roundup((roundup(1920, 32) * roundup(1200, 32) * 4), 4096) * 2)
 			/* 4 bpp x 2 pages */
+#endif
 #endif
 
 /* Note: must be multiple of 4096 */
 #define MSM_FB_SIZE roundup(MSM_FB_PRIM_BUF_SIZE, 4096)
 
 #ifdef CONFIG_FB_MSM_OVERLAY0_WRITEBACK
+#if defined(CONFIG_MACH_MSM8960_EF44S) || defined(CONFIG_MACH_MSM8960_VEGAPVW) ||  defined(CONFIG_MACH_MSM8960_MAGNUS)
+#define MSM_FB_OVERLAY0_WRITEBACK_SIZE \
+		roundup((roundup(1280, 32) * roundup(720, 32) * 3 * 2), 4096)
+#else
 #define MSM_FB_OVERLAY0_WRITEBACK_SIZE \
 		roundup((roundup(1920, 32) * roundup(1200, 32) * 3 * 2), 4096)
+#endif
 #else
 #define MSM_FB_OVERLAY0_WRITEBACK_SIZE (0)
 #endif  /* CONFIG_FB_MSM_OVERLAY0_WRITEBACK */
@@ -226,8 +243,67 @@ static void mipi_dsi_panel_pwm_cfg(void)
 	}
 }
 
+#if defined(CONFIG_MACH_MSM8960_VEGAPVW)
+static struct gpiomux_setting gpio_generals[1] = {
+    {
+        .func = GPIOMUX_FUNC_GPIO, /* oled panel detect */
+        .drv = GPIOMUX_DRV_2MA,
+        .pull = GPIOMUX_PULL_NONE,
+    },
+};
+static struct msm_gpiomux_config msm8960_vegapvw_oled_det_configs[] = {
+    {
+        .gpio = 64,
+        .settings = {
+            [GPIOMUX_ACTIVE]    = &gpio_generals[0],
+            [GPIOMUX_SUSPENDED] = &gpio_generals[0],
+        },
+    },
+};
+#endif
+
+
+#ifdef CONFIG_MACH_MSM8960_MAGNUS
+static struct gpiomux_setting gpio_generals[1] = {
+    {
+        .func = GPIOMUX_FUNC_GPIO, /*lcd vci*/
+        .drv = GPIOMUX_DRV_2MA,
+//        .pull = GPIOMUX_PULL_NONE,
+        .pull = GPIOMUX_PULL_DOWN,
+    },
+};
+static struct msm_gpiomux_config msm8960_magnus_ldo_configs[] = {
+    {
+        .gpio = 81,
+        .settings = {
+            [GPIOMUX_ACTIVE]    = &gpio_generals[0],
+            [GPIOMUX_SUSPENDED] = &gpio_generals[0],
+        },
+    },
+};
+static struct msm_gpiomux_config msm8960_magnus_lcd_en_configs[] = {
+    {
+        .gpio = 10,
+        .settings = {
+            [GPIOMUX_ACTIVE]    = &gpio_generals[0],
+            [GPIOMUX_SUSPENDED] = &gpio_generals[0],
+        },
+    },
+};
+#endif //ifdef CONFIG_MACH_MSM8960_MAGNUS
 static bool dsi_power_on;
 
+int gpio43; /* 43:LCD Reset */
+#if defined (CONFIG_MACH_MSM8960_EF44S) || defined (CONFIG_MACH_MSM8960_MAGNUS) 
+int gpio16, gpio24; /* 16 : LCD backlight */
+#endif 
+#if defined(CONFIG_MACH_MSM8960_MAGNUS)
+#define MIPI_VCI		81 /* 81 : MAGNUS LCD VCI */
+#define MIPI_LCD_EN		10 /* 81 : MAGNUS LCD VCI */
+#endif
+#if defined(CONFIG_MACH_MSM8960_VEGAPVW)
+#define MIPI_OLED_DET		64 
+#endif
 /**
  * LiQUID panel on/off
  *
@@ -346,6 +422,647 @@ static int mipi_dsi_liquid_panel_power(int on)
 	return 0;
 }
 
+#if defined(CONFIG_MACH_MSM8960_EF44S)
+static int mipi_dsi_ef44_panel_power(int on)
+{
+	static struct regulator *reg_l23, *reg_l2;
+	static int gpio15 /*, gpio24, gpio43*/;  
+	static int mipi_dsi_cdp_gpio_configured;
+	int rc;
+
+	struct pm_gpio gpio43_param = {
+		.direction = PM_GPIO_DIR_OUT,
+		.output_buffer = PM_GPIO_OUT_BUF_CMOS,
+		.output_value = 0,
+//		.pull = PM_GPIO_PULL_NO,
+		.pull = PM_GPIO_PULL_DN,
+		.vin_sel = PM_GPIO_VIN_S4,
+		.out_strength = PM_GPIO_STRENGTH_HIGH,
+		.function = PM_GPIO_FUNC_PAIRED,
+		.inv_int_pol = 0,
+		.disable_pin = 0,
+	};
+	
+	struct pm_gpio gpio15_param = {
+		.direction = PM_GPIO_DIR_OUT,
+		.output_buffer = PM_GPIO_OUT_BUF_CMOS,
+		.output_value = 0,
+//		.pull = PM_GPIO_PULL_NO,
+		.pull = PM_GPIO_PULL_DN,
+		.vin_sel = PM_GPIO_VIN_S4,
+		.out_strength = PM_GPIO_STRENGTH_HIGH,
+		.function = PM_GPIO_FUNC_NORMAL,
+		.inv_int_pol = 0,
+		.disable_pin = 0,
+	};
+	
+	struct pm_gpio gpio16_param = {
+		.direction = PM_GPIO_DIR_OUT,
+		.output_buffer = PM_GPIO_OUT_BUF_CMOS,
+		.output_value = 0,
+//		.pull = PM_GPIO_PULL_NO,
+		.pull = PM_GPIO_PULL_DN,
+		.vin_sel = PM_GPIO_VIN_S4,
+		.out_strength = PM_GPIO_STRENGTH_HIGH,
+		.function = PM_GPIO_FUNC_NORMAL,
+		.inv_int_pol = 0,
+		.disable_pin = 0,
+	};	
+
+	struct pm_gpio gpio24_param = {
+		.direction = PM_GPIO_DIR_OUT,
+		.output_buffer = PM_GPIO_OUT_BUF_CMOS,
+		.output_value = 0,
+//		.pull = PM_GPIO_PULL_NO,
+		.pull = PM_GPIO_PULL_DN,
+		.vin_sel = PM_GPIO_VIN_S4,
+		.out_strength = PM_GPIO_STRENGTH_HIGH,
+		.function = PM_GPIO_FUNC_NORMAL,
+		.inv_int_pol = 0,
+		.disable_pin = 0,
+	};	
+	
+	if (mipi_dsi_cdp_gpio_configured == 0) {
+       		rc = pm8xxx_gpio_config(PM8921_GPIO_PM_TO_SYS(43),
+        		         &gpio43_param);
+        	if (rc != 0)
+        		pr_err("%s: gpio43 failed\n", __func__);
+
+		rc = pm8xxx_gpio_config(PM8921_GPIO_PM_TO_SYS(15), &gpio15_param);
+        	if (rc != 0)
+        		pr_err("%s: gpio15 failed\n", __func__);
+
+		rc = pm8xxx_gpio_config(PM8921_GPIO_PM_TO_SYS(16), &gpio16_param);
+        	if (rc != 0)
+        		pr_err("%s: gpio16 failed\n", __func__);
+		
+		rc = pm8xxx_gpio_config(PM8921_GPIO_PM_TO_SYS(24), &gpio24_param);
+        	if (rc != 0)
+        		pr_err("%s: gpio24 failed\n", __func__);
+
+        	mipi_dsi_cdp_gpio_configured++;
+	}
+	
+	if (!dsi_power_on) {
+		reg_l23 = regulator_get(&msm_mipi_dsi1_device.dev,
+				"dsi_vddio");
+		if (IS_ERR(reg_l23)) {
+			pr_err("could not get 8921_l23, rc = %ld\n",
+				PTR_ERR(reg_l23));
+			return -ENODEV;
+		}	
+		
+		reg_l2 = regulator_get(&msm_mipi_dsi1_device.dev,
+				"dsi_vdda");
+		if (IS_ERR(reg_l2)) {
+			pr_err("could not get 8921_l2, rc = %ld\n",
+				PTR_ERR(reg_l2));
+			return -ENODEV;
+		}
+
+		rc = regulator_set_voltage(reg_l23, 1800000, 1800000);
+		if (rc) {
+			pr_err("set_voltage l23 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+
+		rc = regulator_set_voltage(reg_l2, 1200000, 1200000);
+		if (rc) {
+			pr_err("set_voltage l2 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+
+		gpio43 = PM8921_GPIO_PM_TO_SYS(43);
+		gpio15 = PM8921_GPIO_PM_TO_SYS(15);
+		gpio16 = PM8921_GPIO_PM_TO_SYS(16);
+		gpio24 = PM8921_GPIO_PM_TO_SYS(24);
+
+	        rc = gpio_request(gpio43, "disp_rst_n");
+                if (rc) {
+                      pr_err("request gpio 43 failed, rc=%d\n", rc);
+                      return -ENODEV;
+                }
+
+		rc = gpio_request(gpio15, "lcd_vci");
+		if (rc) {
+			pr_err("request gpio 15 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+
+		rc = gpio_request(gpio16, "lcd_bl");
+		if (rc) {
+			pr_err("request gpio 16 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+		rc = gpio_request(gpio24, "lcd_blx");
+		if (rc) {
+			pr_err("request gpio 24 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+		dsi_power_on = true;
+	}
+
+	if (on)
+	{
+		rc = regulator_set_optimum_mode(reg_l23, 100000);
+		if (rc < 0) {
+			pr_err("set_optimum_mode l23 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}		
+
+		rc = regulator_set_optimum_mode(reg_l2, 100000);
+		if (rc < 0) {
+			pr_err("set_optimum_mode l2 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}	
+		rc = regulator_enable(reg_l23);
+		if (rc) {
+			pr_err("enable l23 failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+
+		rc = regulator_enable(reg_l2);
+		if (rc) {
+			pr_err("enable l2 failed, rc=%d\n", rc);
+			return -ENODEV;
+		}	
+		gpio_set_value_cansleep(gpio15, 1);
+		usleep(10);
+
+		gpio_set_value_cansleep(gpio43, 0);
+		msleep(1);
+		gpio_set_value_cansleep(gpio43, 1);
+              msleep(1);
+     		   
+     	       //gpio_set_value_cansleep(gpio24, 1);
+              //usleep(10);
+		//gpio_set_value_cansleep(gpio16, 1);
+	}else 
+	{
+		gpio_set_value_cansleep(gpio43, 0);
+		msleep(1);
+		gpio_set_value_cansleep(gpio16, 0);
+		gpio_set_value_cansleep(gpio24, 0);
+		gpio_set_value_cansleep(gpio15, 0);
+		
+		rc = regulator_disable(reg_l2);
+		if (rc) {
+			pr_err("disable reg_l2 failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+		rc = regulator_disable(reg_l23);
+		if (rc) {
+			pr_err("disable reg_l23 failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+		
+		rc = regulator_set_optimum_mode(reg_l23, 100);
+		if (rc < 0) {
+			pr_err("set_optimum_mode l23 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+
+		rc = regulator_set_optimum_mode(reg_l2, 100);
+		if (rc < 0) {
+			pr_err("set_optimum_mode l2 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+	}
+
+	return 0;
+}
+
+#elif defined (CONFIG_MACH_MSM8960_VEGAPVW)
+static int mipi_dsi_premia_panel_power(int on)
+{
+	static struct regulator *reg_l8, *reg_l17, *reg_l2;
+	static int mipi_dsi_cdp_gpio_configured;
+	int rc;
+
+	struct pm_gpio gpio43_param = {
+		.direction = PM_GPIO_DIR_OUT,
+		.output_buffer = PM_GPIO_OUT_BUF_CMOS,
+		.output_value = 0,
+		.pull = PM_GPIO_PULL_DN,
+		.vin_sel = 2,
+		.out_strength = PM_GPIO_STRENGTH_HIGH,
+		.function = PM_GPIO_FUNC_PAIRED,
+		.inv_int_pol = 0,
+		.disable_pin = 0,
+	};
+	
+
+        if (mipi_dsi_cdp_gpio_configured == 0) {
+        	rc = pm8xxx_gpio_config(PM8921_GPIO_PM_TO_SYS(43),
+        		         &gpio43_param);
+        	if (rc != 0)
+        		pr_err("%s: gpio43 failed\n", __func__);
+        	mipi_dsi_cdp_gpio_configured++;
+	}
+
+
+	if (!dsi_power_on) {
+		reg_l17 = regulator_get(&msm_mipi_dsi1_device.dev,
+				"dsi_vddio");
+		if (IS_ERR(reg_l17)) {
+			pr_err("could not get 8921_l17, rc = %ld\n",
+			PTR_ERR(reg_l17));
+
+			return -ENODEV;
+		}
+
+		reg_l8 = regulator_get(&msm_mipi_dsi1_device.dev,
+				"dsi_vdc");
+		if (IS_ERR(reg_l8)) {
+			pr_err("could not get 8921_l8, rc = %ld\n",
+				PTR_ERR(reg_l8));
+			return -ENODEV;
+		}
+
+		reg_l2 = regulator_get(&msm_mipi_dsi1_device.dev,
+				"dsi_vdda");
+		if (IS_ERR(reg_l2)) {
+			pr_err("could not get 8921_l2, rc = %ld\n",
+				PTR_ERR(reg_l2));
+			return -ENODEV;
+		}
+
+
+		rc = regulator_set_voltage(reg_l8, 3100000, 3100000);
+	       	if (rc) {
+                        pr_err("set_voltage l8 failed, rc=%d\n", rc);
+                        return -EINVAL;
+                }
+		rc = regulator_set_voltage(reg_l17, 2200000, 2200000);
+	       	if (rc) {
+                        pr_err("set_voltage l17 failed, rc=%d\n", rc);
+                        return -EINVAL;
+                }
+ 		rc = regulator_set_voltage(reg_l2, 1200000, 1200000);
+	       	if (rc) {
+                        pr_err("set_voltage l2 failed, rc=%d\n", rc);
+                        return -EINVAL;
+                }
+		
+		gpio43 = PM8921_GPIO_PM_TO_SYS(43);
+                rc = gpio_request(gpio43, "disp_rst_n");
+                if (rc) {
+                        pr_err("request gpio 43 failed, rc=%d\n", rc);
+                        return -ENODEV;
+                }
+
+		dsi_power_on = true;
+	}
+
+	if (on)
+	{
+                rc = regulator_set_optimum_mode(reg_l17, 100000);
+ 		if (rc < 0) {
+  			pr_err("set_optimum_mode l17 failed, rc=%d\n", rc);
+  			return -EINVAL;
+   		}	
+
+		rc = regulator_set_optimum_mode(reg_l8, 100000);
+                if (rc < 0) {
+                        pr_err("set_optimum_mode l8 failed, rc=%d\n", rc);
+                        return -EINVAL;
+                }
+	
+		rc = regulator_set_optimum_mode(reg_l2, 100000);
+        if (rc < 0) {
+               pr_err("set_optimum_mode l2 failed, rc=%d\n", rc);
+               return -EINVAL;
+        }
+        rc = regulator_enable(reg_l2);
+                if (rc) {
+                        pr_err("enable l2 failed, rc=%d\n", rc);
+                        return -ENODEV;
+                }
+				msleep(1);
+                rc = regulator_enable(reg_l8);
+                if (rc) {
+                        pr_err("enable l8 failed, rc=%d\n", rc);
+                        return -ENODEV;
+                }
+				msleep(1);
+
+				rc = regulator_enable(reg_l17);
+				if (rc) {
+                        pr_err("enable l17 failed, rc=%d\n", rc);
+                        return -ENODEV;
+                }
+		rc = gpio_request(MIPI_OLED_DET, "mipi_oled_det");
+		if (rc) {
+			pr_err("mipi oled_det gpio_request failed: %d\n", rc);
+//			return rc;
+		}
+		msleep(1);
+
+	     	    gpio_set_value_cansleep(gpio43, 0);
+	       		msleep(10);
+                gpio_set_value_cansleep(gpio43, 1);
+                msleep(20);
+               // msleep(30);
+
+	}else
+	{
+		gpio_free(MIPI_OLED_DET);
+
+		rc = regulator_disable(reg_l2);
+		if (rc) {
+                        pr_err("enable l2 failed, rc=%d\n", rc);
+                        return -ENODEV;
+                }
+
+				msleep(1);
+                rc = regulator_disable(reg_l8);
+                if (rc) {
+                        pr_err("enable l8 failed, rc=%d\n", rc);
+                        return -ENODEV;
+                }
+				msleep(1);
+
+                rc = regulator_disable(reg_l17);
+                if (rc) {
+                        pr_err("enable l17 failed, rc=%d\n", rc);
+                        return -ENODEV;
+                }
+				msleep(1);
+                rc = regulator_set_optimum_mode(reg_l2, 100);
+                if (rc < 0) {
+                        pr_err("set_optimum_mode l2 failed, rc=%d\n", rc);
+                        return -EINVAL;
+                }
+
+                rc = regulator_set_optimum_mode(reg_l8, 100);
+                if (rc < 0) {
+                        pr_err("set_optimum_mode l8 failed, rc=%d\n", rc);
+                        return -EINVAL;
+                }
+                rc = regulator_set_optimum_mode(reg_l17, 100);
+                if (rc < 0) {
+                        pr_err("set_optimum_mode l17 failed, rc=%d\n", rc);
+                        return -EINVAL;
+                }
+				msleep(10);
+				gpio_set_value_cansleep(gpio43, 0);
+
+		
+	}
+	return 0;
+	
+}
+#elif defined (CONFIG_MACH_MSM8960_MAGNUS)
+static int mipi_dsi_magnus_panel_power(int on)
+{
+	static struct regulator *reg_l23, *reg_l2;
+	static int gpio15 /*, gpio24, gpio43*/;  
+	static int mipi_dsi_cdp_gpio_configured;
+	int rc;
+
+	struct pm_gpio gpio43_param = {
+		.direction = PM_GPIO_DIR_OUT,
+		.output_buffer = PM_GPIO_OUT_BUF_CMOS,
+		.output_value = 0,
+//		.pull = PM_GPIO_PULL_NO,
+		.pull = PM_GPIO_PULL_DN,
+		.vin_sel = PM_GPIO_VIN_S4,
+		.out_strength = PM_GPIO_STRENGTH_HIGH,
+		.function = PM_GPIO_FUNC_PAIRED,
+		.inv_int_pol = 0,
+		.disable_pin = 0,
+	};
+	
+	struct pm_gpio gpio15_param = {
+		.direction = PM_GPIO_DIR_OUT,
+		.output_buffer = PM_GPIO_OUT_BUF_CMOS,
+		.output_value = 0,
+//		.pull = PM_GPIO_PULL_NO,
+		.pull = PM_GPIO_PULL_DN,
+		.vin_sel = PM_GPIO_VIN_S4,
+		.out_strength = PM_GPIO_STRENGTH_HIGH,
+		.function = PM_GPIO_FUNC_NORMAL,
+		.inv_int_pol = 0,
+		.disable_pin = 0,
+	};
+	
+	struct pm_gpio gpio16_param = {
+		.direction = PM_GPIO_DIR_OUT,
+		.output_buffer = PM_GPIO_OUT_BUF_CMOS,
+		.output_value = 1,
+//		.pull = PM_GPIO_PULL_NO,
+		.pull = PM_GPIO_PULL_DN,
+		.vin_sel = PM_GPIO_VIN_S4,
+		.out_strength = PM_GPIO_STRENGTH_HIGH,
+		.function = PM_GPIO_FUNC_NORMAL,
+		.inv_int_pol = 0,
+		.disable_pin = 0,
+	};	
+
+	struct pm_gpio gpio24_param = {
+		.direction = PM_GPIO_DIR_OUT,
+		.output_buffer = PM_GPIO_OUT_BUF_CMOS,
+		.output_value = 0,
+//		.pull = PM_GPIO_PULL_NO,
+		.pull = PM_GPIO_PULL_DN,
+		.vin_sel = PM_GPIO_VIN_S4,
+		.out_strength = PM_GPIO_STRENGTH_HIGH,
+		.function = PM_GPIO_FUNC_NORMAL,
+		.inv_int_pol = 0,
+		.disable_pin = 0,
+	};	
+	
+	if (mipi_dsi_cdp_gpio_configured == 0) {
+       		rc = pm8xxx_gpio_config(PM8921_GPIO_PM_TO_SYS(43),
+        		         &gpio43_param);
+        	if (rc != 0)
+        		pr_err("%s: gpio43 failed\n", __func__);
+
+		rc = pm8xxx_gpio_config(PM8921_GPIO_PM_TO_SYS(15), &gpio15_param);
+        	if (rc != 0)
+        		pr_err("%s: gpio15 failed\n", __func__);
+
+		rc = pm8xxx_gpio_config(PM8921_GPIO_PM_TO_SYS(16), &gpio16_param);
+        	if (rc != 0)
+        		pr_err("%s: gpio16 failed\n", __func__);
+		
+		rc = pm8xxx_gpio_config(PM8921_GPIO_PM_TO_SYS(24), &gpio24_param);
+        	if (rc != 0)
+        		pr_err("%s: gpio24 failed\n", __func__);
+
+        	mipi_dsi_cdp_gpio_configured++;
+	}
+	
+	if (!dsi_power_on) {
+		reg_l23 = regulator_get(&msm_mipi_dsi1_device.dev,
+				"dsi_vddio");
+		if (IS_ERR(reg_l23)) {
+			pr_err("could not get 8921_l23, rc = %ld\n",
+				PTR_ERR(reg_l23));
+			return -ENODEV;
+		}	
+		
+		reg_l2 = regulator_get(&msm_mipi_dsi1_device.dev,
+				"dsi_vdda");
+		if (IS_ERR(reg_l2)) {
+			pr_err("could not get 8921_l2, rc = %ld\n",
+				PTR_ERR(reg_l2));
+			return -ENODEV;
+		}
+
+		rc = regulator_set_voltage(reg_l23, 1800000, 1800000);
+		if (rc) {
+			pr_err("set_voltage l23 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+
+		rc = regulator_set_voltage(reg_l2, 1200000, 1200000);
+		if (rc) {
+			pr_err("set_voltage l2 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+
+		gpio43 = PM8921_GPIO_PM_TO_SYS(43);
+		gpio15 = PM8921_GPIO_PM_TO_SYS(15);
+		gpio16 = PM8921_GPIO_PM_TO_SYS(16);
+		gpio24 = PM8921_GPIO_PM_TO_SYS(24);
+
+	        rc = gpio_request(gpio43, "disp_rst_n");
+                if (rc) {
+                      pr_err("request gpio 43 failed, rc=%d\n", rc);
+                      return -ENODEV;
+                }
+
+		rc = gpio_request(gpio15, "lcd_vci");
+		if (rc) {
+			pr_err("request gpio 15 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+
+		rc = gpio_request(gpio16, "lcd_bl");
+		if (rc) {
+			pr_err("request gpio 16 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+		rc = gpio_request(gpio24, "lcd_blx");
+		if (rc) {
+			pr_err("request gpio 24 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+		dsi_power_on = true;
+	}
+
+	if (on)
+	{
+#if defined(CONFIG_MACH_MSM8960_MAGNUS)
+		rc = gpio_request(MIPI_VCI, "mipi_vci_ldo");
+		if (rc) {
+			pr_err("mipi vci_en gpio_request failed: %d\n", rc);
+//			return rc;
+		}
+		printk("[MAGNUS] mipi vci_en gpio_request sucess..: %d\n", rc);
+		gpio_direction_output(MIPI_VCI, 1);
+		rc = gpio_request(MIPI_LCD_EN, "mipi_lcd_en");
+		if (rc) {
+			pr_err("mipi lcd_en gpio_request failed: %d\n", rc);
+//			return rc;
+		}
+		printk("[MAGNUS] mipi lcd_en gpio_request sucess..: %d\n", rc);
+#endif
+		rc = regulator_set_optimum_mode(reg_l23, 100000);
+		if (rc < 0) {
+			pr_err("set_optimum_mode l23 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}		
+
+		rc = regulator_set_optimum_mode(reg_l2, 100000);
+		if (rc < 0) {
+			pr_err("set_optimum_mode l2 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}	
+#if defined(CONFIG_MACH_MSM8960_MAGNUS)
+//		rc = gpio_request(MIPI_VCI, "mipi_vci_ldo");
+//		if (rc) {
+//			pr_err("mipi vci_en gpio_request failed: %d\n", rc);
+//			return rc;
+//		}
+//		printk("[MAGNUS] mipi vci_en gpio_request sucess..: %d\n", rc);
+//		gpio_direction_output(MIPI_VCI, 1);
+#endif
+		rc = regulator_enable(reg_l23);
+		if (rc) {
+			pr_err("enable l23 failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+
+		rc = regulator_enable(reg_l2);
+		if (rc) {
+			pr_err("enable l2 failed, rc=%d\n", rc);
+			return -ENODEV;
+		}	
+
+
+	    gpio_set_value_cansleep(gpio43, 0);
+	    msleep(10);
+        gpio_set_value_cansleep(gpio43, 1);
+        msleep(10);
+
+#if defined(CONFIG_MACH_MSM8960_MAGNUS)
+	    gpio_direction_output(MIPI_LCD_EN, 1);
+#endif
+        gpio_set_value_cansleep(gpio15, 1);
+//		gpio_set_value_cansleep(gpio16, 1);
+#if defined(CONFIG_MACH_MSM8960_EF44S)
+		gpio_set_value_cansleep(gpio24, 1);
+#endif 
+			
+	}else 
+	{
+		gpio_set_value_cansleep(gpio15, 0);
+		msleep(1);
+		gpio_set_value_cansleep(gpio43, 0);
+		msleep(1);
+		gpio_set_value_cansleep(gpio16, 0);
+#if defined(CONFIG_MACH_MSM8960_EF44S)
+		gpio_set_value_cansleep(gpio24, 0);
+#endif 
+#if defined(CONFIG_MACH_MSM8960_MAGNUS)
+		gpio_direction_output(MIPI_VCI, 0);
+		gpio_free(MIPI_VCI);
+		gpio_direction_output(MIPI_LCD_EN, 0);
+		gpio_free(MIPI_LCD_EN);
+#endif
+		rc = regulator_disable(reg_l2);
+		if (rc) {
+			pr_err("disable reg_l2 failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+//#if defined(CONFIG_MACH_MSM8960_MAGNUS)
+//		gpio_direction_output(MIPI_VCI, 0);
+//		gpio_free(MIPI_VCI);
+//#endif
+		rc = regulator_disable(reg_l23);
+		if (rc) {
+			pr_err("disable reg_l23 failed, rc=%d\n", rc);
+			return -ENODEV;
+		}
+		
+		rc = regulator_set_optimum_mode(reg_l23, 100);
+		if (rc < 0) {
+			pr_err("set_optimum_mode l23 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+
+		rc = regulator_set_optimum_mode(reg_l2, 100);
+		if (rc < 0) {
+			pr_err("set_optimum_mode l2 failed, rc=%d\n", rc);
+			return -EINVAL;
+		}
+	}
+
+	return 0;
+}
+#else
 static int mipi_dsi_cdp_panel_power(int on)
 {
 	static struct regulator *reg_l8, *reg_l23, *reg_l2;
@@ -467,7 +1184,7 @@ static int mipi_dsi_cdp_panel_power(int on)
 	}
 	return 0;
 }
-
+#endif
 static char mipi_dsi_splash_is_enabled(void);
 static int mipi_dsi_panel_power(int on)
 {
@@ -478,7 +1195,15 @@ static int mipi_dsi_panel_power(int on)
 	if (machine_is_msm8960_liquid())
 		ret = mipi_dsi_liquid_panel_power(on);
 	else
+#if defined(CONFIG_MACH_MSM8960_EF44S) 
+	    	ret = mipi_dsi_ef44_panel_power(on);
+#elif defined(CONFIG_MACH_MSM8960_VEGAPVW)
+		ret = mipi_dsi_premia_panel_power(on);
+#elif defined(CONFIG_MACH_MSM8960_MAGNUS)
+	    	ret = mipi_dsi_magnus_panel_power(on);
+#else
 		ret = mipi_dsi_cdp_panel_power(on);
+#endif
 
 	return ret;
 }
@@ -588,6 +1313,22 @@ static struct msm_panel_common_pdata mdp_pdata = {
 	.cont_splash_enabled = 0x01,
 	.mdp_iommu_split_domain = 0,
 };
+#if defined(CONFIG_MACH_MSM8960_EF44S)
+static struct platform_device mipi_dsi_sony_wm_panel_device = {
+	.name = "mipi_sony_wm",
+	.id = 0,
+};
+#elif defined(CONFIG_MACH_MSM8960_VEGAPVW) 
+static struct platform_device mipi_dsi_samsung_oled_hd_panel_device = {
+	.name = "mipi_samsung_oled_hd",
+	.id = 0,
+};
+#elif defined(CONFIG_MACH_MSM8960_MAGNUS)
+static struct platform_device mipi_dsi_rohm_panel_device = {
+	.name = "mipi_rohm",
+	.id = 0,
+};
+#endif
 
 void __init msm8960_mdp_writeback(struct memtype_reserve* reserve_table)
 {
@@ -615,7 +1356,7 @@ static struct platform_device mipi_dsi_simulator_panel_device = {
 	.name = "mipi_simulator",
 	.id = 0,
 };
-
+#if defined(CONFIG_FB_MSM_MIPI_DSI_TOSHIBA)
 #define LPM_CHANNEL0 0
 static int toshiba_gpio[] = {LPM_CHANNEL0};
 
@@ -631,6 +1372,7 @@ static struct platform_device mipi_dsi_toshiba_panel_device = {
 		.platform_data = &toshiba_pdata,
 	}
 };
+#endif
 
 #define FPGA_3D_GPIO_CONFIG_ADDR	0xB5
 static int dsi2lvds_gpio[4] = {
@@ -780,9 +1522,12 @@ static struct msm_bus_scale_pdata dtv_bus_scale_pdata = {
 
 static struct lcdc_platform_data dtv_pdata = {
 	.bus_scale_table = &dtv_bus_scale_pdata,
+#ifdef CONFIG_FB_MSM_HDMI_MSM_PANEL // 20120905 jylee
 	.lcdc_power_save = hdmi_panel_power,
+#endif
 };
 
+#ifdef CONFIG_FB_MSM_HDMI_MSM_PANEL // 20120905 jylee
 static int hdmi_panel_power(int on)
 {
 	int rc;
@@ -795,6 +1540,7 @@ static int hdmi_panel_power(int on)
 	pr_debug("%s: HDMI Core: %s Success\n", __func__, (on ? "ON" : "OFF"));
 	return rc;
 }
+#endif
 #endif
 
 #ifdef CONFIG_FB_MSM_HDMI_MSM_PANEL
@@ -996,6 +1742,7 @@ error:
 
 void __init msm8960_init_fb(void)
 {
+printk("***************111msm8960_init_fb\n");
 	platform_device_register(&msm_fb_device);
 
 #ifdef CONFIG_FB_MSM_WRITEBACK_MSM_PANEL
@@ -1021,8 +1768,15 @@ void __init msm8960_init_fb(void)
 	if (machine_is_msm8960_liquid())
 		platform_device_register(&mipi_dsi2lvds_bridge_device);
 	else
+#if defined (CONFIG_MACH_MSM8960_EF44S)
+		platform_device_register(&mipi_dsi_sony_wm_panel_device);
+#elif defined(CONFIG_MACH_MSM8960_VEGAPVW) 
+		platform_device_register(&mipi_dsi_samsung_oled_hd_panel_device);
+#elif defined(CONFIG_MACH_MSM8960_MAGNUS)
+		platform_device_register(&mipi_dsi_rohm_panel_device);
+#else
 		platform_device_register(&mipi_dsi_toshiba_panel_device);
-
+#endif
 	if (machine_is_msm8x60_rumi3()) {
 		msm_fb_register_device("mdp", NULL);
 		mipi_dsi_pdata.target_type = 1;

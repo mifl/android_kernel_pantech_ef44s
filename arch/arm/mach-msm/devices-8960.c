@@ -250,7 +250,7 @@ struct platform_device msm8960_device_uart_gsbi2 = {
 	.num_resources	= ARRAY_SIZE(resources_uart_gsbi2),
 	.resource	= resources_uart_gsbi2,
 };
-/* GSBI 6 used into UARTDM Mode */
+/* GSBI 6 used into UARTDM Mode */ // CONFIG_BRCM_BT
 static struct resource msm_uart_dm6_resources[] = {
 	{
 		.start	= MSM_UART6DM_PHYS,
@@ -1345,6 +1345,36 @@ int __init msm_add_sdcc(unsigned int controller, struct mmc_platform_data *plat)
 	return platform_device_register(pdev);
 }
 
+#if defined(CONFIG_PANTECH_CAMERA_FLASH) || (defined(CONFIG_MACH_MSM8960_VEGAPVW) && defined(CONFIG_PANTECH_PMIC_MAX17058)) || (defined(CONFIG_MACH_MSM8960_SIRIUSLTE) && defined(CONFIG_PANTECH_PMIC_MAX17058))
+static struct resource resources_qup_i2c_gsbi1[] = {
+	{
+		.name	= "gsbi_qup_i2c_addr",
+		.start	= MSM_GSBI1_PHYS,
+		.end	= MSM_GSBI1_PHYS + 4 - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.name	= "qup_phys_addr",
+		.start	= MSM_GSBI1_QUP_PHYS,
+		.end	= MSM_GSBI1_QUP_PHYS + MSM_QUP_SIZE - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.name	= "qup_err_intr",
+		.start	= MSM8960_GSBI1_QUP_IRQ,//GSBI2_QUP_IRQ,
+		.end	= MSM8960_GSBI1_QUP_IRQ,//GSBI2_QUP_IRQ,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device msm8960_device_qup_i2c_gsbi1 = {
+	.name		= "qup_i2c",
+	.id		= 1,
+	.num_resources	= ARRAY_SIZE(resources_qup_i2c_gsbi1),
+	.resource	= resources_qup_i2c_gsbi1,
+};
+#endif
+
 static struct resource resources_qup_i2c_gsbi4[] = {
 	{
 		.name	= "gsbi_qup_i2c_addr",
@@ -1401,6 +1431,38 @@ struct platform_device msm8960_device_qup_i2c_gsbi3 = {
 	.resource	= resources_qup_i2c_gsbi3,
 };
 
+#ifdef CONFIG_SKY_DMB_I2C_HW
+static struct resource resources_qup_i2c_gsbi8[] = {
+	{
+		.name	= "gsbi_qup_i2c_addr",
+		.start	= MSM_GSBI8_PHYS,
+		.end	= MSM_GSBI8_PHYS + 4 - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.name	= "qup_phys_addr",
+		.start	= MSM_GSBI8_QUP_PHYS,
+		.end	= MSM_GSBI8_QUP_PHYS + MSM_QUP_SIZE - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.name	= "qup_err_intr",
+		.start	= GSBI8_QUP_IRQ,
+		.end	= GSBI8_QUP_IRQ,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device msm8960_device_qup_i2c_gsbi8 = {
+	.name		= "qup_i2c",
+	.id		= 8,
+	.num_resources	= ARRAY_SIZE(resources_qup_i2c_gsbi8),
+	.resource	= resources_qup_i2c_gsbi8,
+};
+#endif
+
+#if defined(CONFIG_PANTECH_PMIC_MAX17058)
+#if defined(CONFIG_MACH_MSM8960_EF44S) || defined(T_MAGNUS)
 static struct resource resources_qup_i2c_gsbi9[] = {
 	{
 		.name	= "gsbi_qup_i2c_addr",
@@ -1424,10 +1486,12 @@ static struct resource resources_qup_i2c_gsbi9[] = {
 
 struct platform_device msm8960_device_qup_i2c_gsbi9 = {
 	.name		= "qup_i2c",
-	.id		= 0,
+	.id		= 9,	//0, djjeon 20121112 modyfiy   0 -> 9
 	.num_resources	= ARRAY_SIZE(resources_qup_i2c_gsbi9),
 	.resource	= resources_qup_i2c_gsbi9,
 };
+#endif
+#endif
 
 static struct resource resources_qup_i2c_gsbi10[] = {
 	{
@@ -1713,33 +1777,41 @@ struct platform_device msm8960_device_vpe = {
 
 #define TSIF_0_CLK       GPIO_CFG(75, 1, GPIO_CFG_INPUT, \
 	GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA)
+#ifndef CONFIG_PANTECH_CAMERA
 #define TSIF_0_EN        GPIO_CFG(76, 1, GPIO_CFG_INPUT, \
 	GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA)
 #define TSIF_0_DATA      GPIO_CFG(77, 1, GPIO_CFG_INPUT, \
 	GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA)
 #define TSIF_0_SYNC      GPIO_CFG(82, 1, GPIO_CFG_INPUT, \
 	GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA)
+#endif
 #define TSIF_1_CLK       GPIO_CFG(79, 1, GPIO_CFG_INPUT, \
 	GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA)
 #define TSIF_1_EN        GPIO_CFG(80, 1, GPIO_CFG_INPUT, \
 	GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA)
 #define TSIF_1_DATA      GPIO_CFG(81, 1, GPIO_CFG_INPUT, \
 	GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA)
+#ifndef CONFIG_SKY_DMB_TSIF_IF
 #define TSIF_1_SYNC      GPIO_CFG(78, 1, GPIO_CFG_INPUT, \
 	GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA)
+#endif
 
 static const struct msm_gpio tsif0_gpios[] = {
 	{ .gpio_cfg = TSIF_0_CLK,  .label =  "tsif_clk", },
+#ifndef CONFIG_PANTECH_CAMERA
 	{ .gpio_cfg = TSIF_0_EN,   .label =  "tsif_en", },
 	{ .gpio_cfg = TSIF_0_DATA, .label =  "tsif_data", },
 	{ .gpio_cfg = TSIF_0_SYNC, .label =  "tsif_sync", },
+#endif
 };
 
 static const struct msm_gpio tsif1_gpios[] = {
 	{ .gpio_cfg = TSIF_1_CLK,  .label =  "tsif_clk", },
 	{ .gpio_cfg = TSIF_1_EN,   .label =  "tsif_en", },
 	{ .gpio_cfg = TSIF_1_DATA, .label =  "tsif_data", },
+#ifndef CONFIG_SKY_DMB_TSIF_IF
 	{ .gpio_cfg = TSIF_1_SYNC, .label =  "tsif_sync", },
+#endif
 };
 
 struct msm_tsif_platform_data tsif1_platform_data = {
@@ -1794,7 +1866,11 @@ struct resource tsif0_resources[] = {
 struct platform_device msm_device_tsif[2] = {
 	{
 		.name          = "msm_tsif",
+#ifdef CONFIG_SKY_DMB_TSIF_IF
+		.id            = 1,
+#else
 		.id            = 0,
+#endif
 		.num_resources = ARRAY_SIZE(tsif0_resources),
 		.resource      = tsif0_resources,
 		.dev = {
@@ -1803,7 +1879,11 @@ struct platform_device msm_device_tsif[2] = {
 	},
 	{
 		.name          = "msm_tsif",
+#ifdef CONFIG_SKY_DMB_TSIF_IF
+		.id            = 0, // Set "tsif.0" refer to uevent.rc
+#else
 		.id            = 1,
+#endif
 		.num_resources = ARRAY_SIZE(tsif1_resources),
 		.resource      = tsif1_resources,
 		.dev = {
@@ -1827,6 +1907,7 @@ struct platform_device msm8960_device_ssbi_pmic = {
 	.num_resources  = ARRAY_SIZE(resources_ssbi_pmic),
 };
 
+#ifndef CONFIG_PANTECH_CAMERA   
 static struct resource resources_qup_spi_gsbi1[] = {
 	{
 		.name   = "spi_base",
@@ -1884,6 +1965,7 @@ struct platform_device msm8960_device_qup_spi_gsbi1 = {
 	.num_resources	= ARRAY_SIZE(resources_qup_spi_gsbi1),
 	.resource	= resources_qup_spi_gsbi1,
 };
+#endif
 
 struct platform_device msm_pcm = {
 	.name	= "msm-pcm-dsp",
@@ -2472,6 +2554,7 @@ static uint16_t msm_mpm_irqs_m2a[MSM_MPM_NR_MPM_IRQS] __initdata = {
 	[44] = MSM_GPIO_TO_INT(70),
 	[45] = MSM_GPIO_TO_INT(69),
 	[46] = MSM_GPIO_TO_INT(67),
+#ifndef CONFIG_BRCM_BT	
 	[47] = MSM_GPIO_TO_INT(65),
 	[48] = MSM_GPIO_TO_INT(58),
 	[49] = MSM_GPIO_TO_INT(54),
@@ -2481,6 +2564,16 @@ static uint16_t msm_mpm_irqs_m2a[MSM_MPM_NR_MPM_IRQS] __initdata = {
 	[53] = MSM_GPIO_TO_INT(37),
 	[54] = MSM_GPIO_TO_INT(24),
 	[55] = MSM_GPIO_TO_INT(14),
+#else
+	[47] = MSM_GPIO_TO_INT(58),
+	[48] = MSM_GPIO_TO_INT(54),
+	[49] = MSM_GPIO_TO_INT(52),
+	[50] = MSM_GPIO_TO_INT(49),
+	[51] = MSM_GPIO_TO_INT(40),
+	[52] = MSM_GPIO_TO_INT(37),
+	[53] = MSM_GPIO_TO_INT(24),
+	[54] = MSM_GPIO_TO_INT(14),
+#endif	
 };
 
 static uint16_t msm_mpm_bypassed_apps_irqs[] __initdata = {
@@ -2527,6 +2620,210 @@ struct msm_mpm_device_data msm8960_mpm_dev_data __initdata = {
 
 };
 #endif
+
+static struct clk_lookup msm_clocks_8960_dummy[] = {
+	CLK_DUMMY("pll2",		PLL2,		NULL, 0),
+	CLK_DUMMY("pll8",		PLL8,		NULL, 0),
+	CLK_DUMMY("pll4",		PLL4,		NULL, 0),
+
+	CLK_DUMMY("afab_clk",		AFAB_CLK,	NULL, 0),
+	CLK_DUMMY("afab_a_clk",		AFAB_A_CLK,	NULL, 0),
+	CLK_DUMMY("cfpb_clk",		CFPB_CLK,	NULL, 0),
+	CLK_DUMMY("cfpb_a_clk",		CFPB_A_CLK,	NULL, 0),
+	CLK_DUMMY("dfab_clk",		DFAB_CLK,	NULL, 0),
+	CLK_DUMMY("dfab_a_clk",		DFAB_A_CLK,	NULL, 0),
+	CLK_DUMMY("ebi1_clk",		EBI1_CLK,	NULL, 0),
+	CLK_DUMMY("ebi1_a_clk",		EBI1_A_CLK,	NULL, 0),
+	CLK_DUMMY("mmfab_clk",		MMFAB_CLK,	NULL, 0),
+	CLK_DUMMY("mmfab_a_clk",	MMFAB_A_CLK,	NULL, 0),
+	CLK_DUMMY("mmfpb_clk",		MMFPB_CLK,	NULL, 0),
+	CLK_DUMMY("mmfpb_a_clk",	MMFPB_A_CLK,	NULL, 0),
+	CLK_DUMMY("sfab_clk",		SFAB_CLK,	NULL, 0),
+	CLK_DUMMY("sfab_a_clk",		SFAB_A_CLK,	NULL, 0),
+	CLK_DUMMY("sfpb_clk",		SFPB_CLK,	NULL, 0),
+	CLK_DUMMY("sfpb_a_clk",		SFPB_A_CLK,	NULL, 0),
+
+	CLK_DUMMY("core_clk",	GSBI1_UART_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI2_UART_CLK, "msm_serial_hsl.0", OFF),
+	CLK_DUMMY("core_clk",	GSBI3_UART_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI4_UART_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI5_UART_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI6_UART_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI7_UART_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI8_UART_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI9_UART_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI10_UART_CLK,	NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI11_UART_CLK,	NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI12_UART_CLK,	NULL, OFF),
+#if defined(CONFIG_PANTECH_CAMERA_FLASH) || (defined(CONFIG_MACH_MSM8960_VEGAPVW) && defined(CONFIG_PANTECH_PMIC_MAX17058)) || (defined(CONFIG_MACH_MSM8960_SIRIUSLTE) && defined(CONFIG_PANTECH_PMIC_MAX17058))
+    CLK_DUMMY("core_clk",   GSBI1_QUP_CLK,      "qup_i2c.1", OFF),
+#endif
+#ifndef CONFIG_PANTECH_CAMERA
+	CLK_DUMMY("core_clk",	GSBI1_QUP_CLK,		"spi_qsd.0", OFF),
+#endif
+	CLK_DUMMY("core_clk",	GSBI2_QUP_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI3_QUP_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI4_QUP_CLK,		"qup_i2c.4", OFF),
+	CLK_DUMMY("core_clk",	GSBI5_QUP_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI6_QUP_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI7_QUP_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI8_QUP_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI9_QUP_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI10_QUP_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI11_QUP_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",	GSBI12_QUP_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		PDM_CLK,		NULL, OFF),
+	CLK_DUMMY("mem_clk",		PMEM_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		PRNG_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		SDC1_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		SDC2_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		SDC3_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		SDC4_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		SDC5_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		TSIF_REF_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		TSSC_CLK,		NULL, OFF),
+	CLK_DUMMY("alt_core_clk",	USB_HS1_XCVR_CLK,	NULL, OFF),
+	CLK_DUMMY("phy_clk",		USB_PHY0_CLK,		NULL, OFF),
+	CLK_DUMMY("src_clk",		USB_FS1_SRC_CLK,	NULL, OFF),
+	CLK_DUMMY("alt_core_clk",	USB_FS1_XCVR_CLK,	NULL, OFF),
+	CLK_DUMMY("sys_clk",		USB_FS1_SYS_CLK,	NULL, OFF),
+	CLK_DUMMY("src_clk",		USB_FS2_SRC_CLK,	NULL, OFF),
+	CLK_DUMMY("alt_core_clk",	USB_FS2_XCVR_CLK,	NULL, OFF),
+	CLK_DUMMY("sys_clk",		USB_FS2_SYS_CLK,	NULL, OFF),
+	CLK_DUMMY("iface_clk",		CE2_CLK,	     "qce.0", OFF),
+	CLK_DUMMY("core_clk",		CE1_CORE_CLK,	     "qce.0", OFF),
+#if defined(CONFIG_PANTECH_CAMERA_FLASH) || (defined(CONFIG_MACH_MSM8960_VEGAPVW) && defined(CONFIG_PANTECH_PMIC_MAX17058))  || (defined(CONFIG_MACH_MSM8960_SIRIUSLTE) && defined(CONFIG_PANTECH_PMIC_MAX17058))
+    CLK_DUMMY("iface_clk",      GSBI1_P_CLK,        "qup_i2c.1", OFF),
+#endif
+#ifndef CONFIG_PANTECH_CAMERA
+	CLK_DUMMY("iface_clk",		GSBI1_P_CLK, "spi_qsd.0", OFF),
+#endif
+	CLK_DUMMY("iface_clk",		GSBI2_P_CLK,
+						  "msm_serial_hsl.0", OFF),
+	CLK_DUMMY("iface_clk",		GSBI3_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		GSBI4_P_CLK,	 "qup_i2c.4", OFF),
+	CLK_DUMMY("iface_clk",		GSBI5_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		GSBI6_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		GSBI7_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		GSBI8_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		GSBI9_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		GSBI10_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		GSBI11_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		GSBI12_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		GSBI12_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		TSIF_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		USB_FS1_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		USB_FS2_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		USB_HS1_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		SDC1_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		SDC2_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		SDC3_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		SDC4_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		SDC5_P_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		ADM0_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		ADM0_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		PMIC_ARB0_P_CLK,	NULL, OFF),
+	CLK_DUMMY("iface_clk",		PMIC_ARB1_P_CLK,	NULL, OFF),
+	CLK_DUMMY("core_clk",		PMIC_SSBI2_CLK,		NULL, OFF),
+	CLK_DUMMY("mem_clk",		RPM_MSG_RAM_P_CLK,	NULL, OFF),
+	CLK_DUMMY("core_clk",		AMP_CLK,		NULL, OFF),
+	CLK_DUMMY("cam_clk",		CAM0_CLK,		NULL, OFF),
+	CLK_DUMMY("cam_clk",		CAM1_CLK,		NULL, OFF),
+	CLK_DUMMY("csi_src_clk",	CSI0_SRC_CLK,		NULL, OFF),
+	CLK_DUMMY("csi_src_clk",	CSI1_SRC_CLK,		NULL, OFF),
+	CLK_DUMMY("csi_clk",		CSI0_CLK,		NULL, OFF),
+	CLK_DUMMY("csi_clk",		CSI1_CLK,		NULL, OFF),
+	CLK_DUMMY("csi_pix_clk",	CSI_PIX_CLK,		NULL, OFF),
+	CLK_DUMMY("csi_rdi_clk",	CSI_RDI_CLK,		NULL, OFF),
+	CLK_DUMMY("csiphy_timer_src_clk", CSIPHY_TIMER_SRC_CLK,	NULL, OFF),
+	CLK_DUMMY("csi0phy_timer_clk",	CSIPHY0_TIMER_CLK,	NULL, OFF),
+	CLK_DUMMY("csi1phy_timer_clk",	CSIPHY1_TIMER_CLK,	NULL, OFF),
+	CLK_DUMMY("dsi_byte_div_clk",	DSI1_BYTE_CLK,	"mipi_dsi.1", OFF),
+	CLK_DUMMY("dsi_byte_div_clk",	DSI2_BYTE_CLK,	"mipi_dsi.2", OFF),
+	CLK_DUMMY("dsi_esc_clk",	DSI1_ESC_CLK,	"mipi_dsi.1", OFF),
+	CLK_DUMMY("dsi_esc_clk",	DSI2_ESC_CLK,	"mipi_dsi.2", OFF),
+	CLK_DUMMY("core_clk",		GFX2D0_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		GFX2D1_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		GFX3D_CLK,		NULL, OFF),
+	CLK_DUMMY("ijpeg_clk",		IJPEG_CLK,		NULL, OFF),
+	CLK_DUMMY("mem_clk",		IMEM_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		JPEGD_CLK,		NULL, OFF),
+	CLK_DUMMY("mdp_clk",		MDP_CLK,		NULL, OFF),
+	CLK_DUMMY("mdp_vsync_clk",	MDP_VSYNC_CLK,		NULL, OFF),
+	CLK_DUMMY("lut_mdp",		LUT_MDP_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		ROT_CLK,		NULL, OFF),
+	CLK_DUMMY("tv_src_clk",		TV_SRC_CLK,		NULL, OFF),
+	CLK_DUMMY("tv_enc_clk",		TV_ENC_CLK,		NULL, OFF),
+	CLK_DUMMY("tv_dac_clk",		TV_DAC_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		VCODEC_CLK,		NULL, OFF),
+	CLK_DUMMY("mdp_tv_clk",		MDP_TV_CLK,		NULL, OFF),
+	CLK_DUMMY("hdmi_clk",		HDMI_TV_CLK,		NULL, OFF),
+	CLK_DUMMY("hdmi_app_clk",	HDMI_APP_CLK,		NULL, OFF),
+	CLK_DUMMY("vpe_clk",		VPE_CLK,		NULL, OFF),
+	CLK_DUMMY("vfe_clk",		VFE_CLK,		NULL, OFF),
+	CLK_DUMMY("csi_vfe_clk",	CSI0_VFE_CLK,		NULL, OFF),
+	CLK_DUMMY("vfe_axi_clk",	VFE_AXI_CLK,		NULL, OFF),
+	CLK_DUMMY("ijpeg_axi_clk",	IJPEG_AXI_CLK,		NULL, OFF),
+	CLK_DUMMY("mdp_axi_clk",	MDP_AXI_CLK,		NULL, OFF),
+	CLK_DUMMY("bus_clk",		ROT_AXI_CLK,		NULL, OFF),
+	CLK_DUMMY("vcodec_axi_clk",	VCODEC_AXI_CLK,		NULL, OFF),
+	CLK_DUMMY("vcodec_axi_a_clk",	VCODEC_AXI_A_CLK,	NULL, OFF),
+	CLK_DUMMY("vcodec_axi_b_clk",	VCODEC_AXI_B_CLK,	NULL, OFF),
+	CLK_DUMMY("vpe_axi_clk",	VPE_AXI_CLK,		NULL, OFF),
+	CLK_DUMMY("amp_pclk",		AMP_P_CLK,		NULL, OFF),
+	CLK_DUMMY("csi_pclk",		CSI0_P_CLK,		NULL, OFF),
+	CLK_DUMMY("dsi_m_pclk",		DSI1_M_P_CLK,	"mipi_dsi.1", OFF),
+	CLK_DUMMY("dsi_s_pclk",		DSI1_S_P_CLK,	"mipi_dsi.1", OFF),
+	CLK_DUMMY("dsi_m_pclk",		DSI2_M_P_CLK,	"mipi_dsi.2", OFF),
+	CLK_DUMMY("dsi_s_pclk",		DSI2_S_P_CLK,	"mipi_dsi.2", OFF),
+	CLK_DUMMY("iface_clk",		GFX2D0_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		GFX2D1_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		GFX3D_P_CLK,		NULL, OFF),
+	CLK_DUMMY("hdmi_m_pclk",	HDMI_M_P_CLK,		NULL, OFF),
+	CLK_DUMMY("hdmi_s_pclk",	HDMI_S_P_CLK,		NULL, OFF),
+	CLK_DUMMY("ijpeg_pclk",		IJPEG_P_CLK,		NULL, OFF),
+	CLK_DUMMY("jpegd_pclk",		JPEGD_P_CLK,		NULL, OFF),
+	CLK_DUMMY("mem_iface_clk",	IMEM_P_CLK,		NULL, OFF),
+	CLK_DUMMY("mdp_pclk",		MDP_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		SMMU_P_CLK,		NULL, OFF),
+	CLK_DUMMY("iface_clk",		ROT_P_CLK,		NULL, OFF),
+	CLK_DUMMY("tv_enc_pclk",	TV_ENC_P_CLK,		NULL, OFF),
+	CLK_DUMMY("vcodec_pclk",	VCODEC_P_CLK,		NULL, OFF),
+	CLK_DUMMY("vfe_pclk",		VFE_P_CLK,		NULL, OFF),
+	CLK_DUMMY("vpe_pclk",		VPE_P_CLK,		NULL, OFF),
+	CLK_DUMMY("mi2s_osr_clk",	MI2S_OSR_CLK,		NULL, OFF),
+	CLK_DUMMY("mi2s_bit_clk",	MI2S_BIT_CLK,		NULL, OFF),
+	CLK_DUMMY("i2s_mic_osr_clk",	CODEC_I2S_MIC_OSR_CLK,	NULL, OFF),
+	CLK_DUMMY("i2s_mic_bit_clk",	CODEC_I2S_MIC_BIT_CLK,	NULL, OFF),
+	CLK_DUMMY("i2s_mic_osr_clk",	SPARE_I2S_MIC_OSR_CLK,	NULL, OFF),
+	CLK_DUMMY("i2s_mic_bit_clk",	SPARE_I2S_MIC_BIT_CLK,	NULL, OFF),
+	CLK_DUMMY("i2s_spkr_osr_clk",	CODEC_I2S_SPKR_OSR_CLK,	NULL, OFF),
+	CLK_DUMMY("i2s_spkr_bit_clk",	CODEC_I2S_SPKR_BIT_CLK,	NULL, OFF),
+	CLK_DUMMY("i2s_spkr_osr_clk",	SPARE_I2S_SPKR_OSR_CLK,	NULL, OFF),
+	CLK_DUMMY("i2s_spkr_bit_clk",	SPARE_I2S_SPKR_BIT_CLK,	NULL, OFF),
+	CLK_DUMMY("pcm_clk",		PCM_CLK,		NULL, OFF),
+	CLK_DUMMY("core_clk",		JPEGD_AXI_CLK,		NULL, 0),
+	CLK_DUMMY("core_clk",		VFE_AXI_CLK,		NULL, 0),
+	CLK_DUMMY("core_clk",		VCODEC_AXI_CLK,	NULL, 0),
+	CLK_DUMMY("core_clk",		GFX3D_CLK,	NULL, 0),
+	CLK_DUMMY("core_clk",		GFX2D0_CLK,	NULL, 0),
+	CLK_DUMMY("core_clk",		GFX2D1_CLK,	NULL, 0),
+
+	CLK_DUMMY("dfab_dsps_clk",	DFAB_DSPS_CLK, NULL, 0),
+	CLK_DUMMY("core_clk",		DFAB_USB_HS_CLK, "msm_otg", NULL),
+	CLK_DUMMY("bus_clk",		DFAB_SDC1_CLK, "msm_sdcc.1", 0),
+	CLK_DUMMY("bus_clk",		DFAB_SDC2_CLK, "msm_sdcc.2", 0),
+	CLK_DUMMY("bus_clk",		DFAB_SDC3_CLK, "msm_sdcc.3", 0),
+	CLK_DUMMY("bus_clk",		DFAB_SDC4_CLK, "msm_sdcc.4", 0),
+	CLK_DUMMY("bus_clk",		DFAB_SDC5_CLK, "msm_sdcc.5", 0),
+	CLK_DUMMY("dfab_clk",		DFAB_CLK,		NULL, 0),
+	CLK_DUMMY("dma_bam_pclk",	DMA_BAM_P_CLK,		NULL, 0),
+};
+
+struct clock_init_data msm8960_dummy_clock_init_data __initdata = {
+	.table = msm_clocks_8960_dummy,
+	.size = ARRAY_SIZE(msm_clocks_8960_dummy),
+};
 
 #define LPASS_SLIMBUS_PHYS	0x28080000
 #define LPASS_SLIMBUS_BAM_PHYS	0x28084000

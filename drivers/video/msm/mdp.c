@@ -2827,6 +2827,12 @@ static int mdp_probe(struct platform_device *pdev)
 
 #endif
 
+#ifdef CONFIG_FB_MSM_LOGO  //KERNEL LOGO DISPLAY ejkim_add
+	if (mfd->vsync_init != NULL) {
+		mfd->vsync_init(0);			
+	}
+#endif	
+
 	/* set driver data */
 	platform_set_drvdata(msm_fb_dev, mfd);
 
@@ -2842,7 +2848,9 @@ static int mdp_probe(struct platform_device *pdev)
 	mdp4_extn_disp = 0;
 
 	if (mfd->vsync_init != NULL) {
+#ifndef CONFIG_FB_MSM_LOGO	//KERNEL LOGO DISPLAY ejkim_add
 		mfd->vsync_init(0);
+#endif
 
 		if (!mfd->vsync_sysfs_created) {
 			mfd->dev_attr.attr.name = "vsync_event";

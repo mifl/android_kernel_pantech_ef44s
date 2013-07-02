@@ -54,6 +54,10 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/ext4.h>
 
+#ifdef CONFIG_PANTECH_FS_AUTO_REPAIR
+#include "../../arch/arm/mach-msm/sky_sys_reset.h"
+#endif /* CONFIG_PANTECH_FS_AUTO_REPAIR */
+
 static struct proc_dir_entry *ext4_proc_root;
 static struct kset *ext4_kset;
 static struct ext4_lazy_init *ext4_li_info;
@@ -479,6 +483,16 @@ static void ext4_handle_error(struct super_block *sb)
 	if (test_opt(sb, ERRORS_RO)) {
 		ext4_msg(sb, KERN_CRIT, "Remounting filesystem read-only");
 		sb->s_flags |= MS_RDONLY;
+#ifdef CONFIG_PANTECH_FS_AUTO_REPAIR 
+
+		if(strcmp(sb->s_id, "mmcblk0p25")==0)
+		{
+			sky_reset_reason =  SYS_RESET_REASON_USERDATA_FS;
+			panic("EXT4-fs (device %s) ERRORS_RO : panic forced after error\n",
+			sb->s_id);
+		}
+
+#endif /* CONFIG_PANTECH_FS_AUTO_REPAIR */
 	}
 	if (test_opt(sb, ERRORS_PANIC))
 		panic("EXT4-fs (device %s): panic forced after error\n",
@@ -497,7 +511,8 @@ void __ext4_error(struct super_block *sb, const char *function,
 	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: comm %s: %pV\n",
 	       sb->s_id, function, line, current->comm, &vaf);
 	va_end(args);
-
+    save_error_info(sb, function, line);/*add patch for __ext4_error()*/
+        
 	ext4_handle_error(sb);
 }
 
@@ -654,6 +669,16 @@ void __ext4_abort(struct super_block *sb, const char *function,
 		if (EXT4_SB(sb)->s_journal)
 			jbd2_journal_abort(EXT4_SB(sb)->s_journal, -EIO);
 		save_error_info(sb, function, line);
+
+#ifdef CONFIG_PANTECH_FS_AUTO_REPAIR 
+
+		if(strcmp(sb->s_id, "mmcblk0p25")==0)
+		{
+			sky_reset_reason =  SYS_RESET_REASON_USERDATA_FS;
+			panic("EXT4-fs (device %s) ERRORS_RO : panic forced after error\n",
+			sb->s_id);
+	}
+#endif	/* CONFIG_PANTECH_FS_AUTO_REPAIR */	
 	}
 	if (test_opt(sb, ERRORS_PANIC))
 		panic("EXT4-fs panic from previous error\n");

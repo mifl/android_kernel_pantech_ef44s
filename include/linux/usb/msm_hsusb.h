@@ -24,6 +24,11 @@
 #include <linux/usb/otg.h>
 #include <linux/wakelock.h>
 #include <linux/pm_qos.h>
+
+#ifdef CONFIG_ANDROID_PANTECH_USB_OTG_INTENT
+#include <linux/switch.h>
+#endif
+
 #include <linux/hrtimer.h>
 
 /*
@@ -215,6 +220,9 @@ struct msm_otg_platform_data {
 	bool enable_lpm_on_dev_suspend;
 	bool core_clk_always_on_workaround;
 	struct msm_bus_scale_pdata *bus_scale_table;
+#ifdef CONFIG_ANDROID_PANTECH_USB_OTG_MODE
+	int (*control_usb_switch)(int gpio, int value);
+#endif	
 };
 
 /* Timeout (in msec) values (min - max) associated with OTG timers */
@@ -360,6 +368,19 @@ struct msm_otg {
 	u8 active_tmout;
 	struct hrtimer timer;
 	enum usb_vdd_type vdd_type;
+#if defined(CONFIG_ANDROID_PANTECH_USB_OTG_MODE) || defined(FEATURE_ANDROID_PANTECH_USB_SMB_OTG_MODE)
+	int pmic_id_status;
+	struct delayed_work pmic_id_det;
+#endif
+
+#ifdef CONFIG_ANDROID_PANTECH_USB_OTG_INTENT
+	struct switch_dev sdev_otg;
+	struct switch_dev sdev_otg_dev;
+#endif
+#ifdef FEATURE_PANTECH_USB_CABLE_CONNECT
+	int connect_state;
+	struct work_struct connect_work;
+#endif
 };
 
 struct msm_hsic_host_platform_data {

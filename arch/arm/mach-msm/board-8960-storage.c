@@ -62,7 +62,15 @@ static struct msm_mmc_reg_data mmc_vdd_reg_data[MAX_SDCC_CONTROLLER] = {
 		.high_vol_level = 2950000,
 		.low_vol_level = 2950000,
 		.hpm_uA = 600000, /* 600mA */
+	},
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+	[SDCC4] = {
+		.name = "sdc_vdd",
+		.high_vol_level = 1800000,
+		.low_vol_level = 1800000,
+		.hpm_uA = 600000, /* 600mA */
 	}
+#endif	
 };
 
 /* SDCC controllers may require voting for IO operating voltage */
@@ -92,6 +100,7 @@ static struct msm_mmc_reg_data mmc_vdd_io_reg_data[MAX_SDCC_CONTROLLER] = {
 		.lpm_uA = 2000,
 	},
 	/* SDCC4 : SDIO slot connected */
+#if !defined(CONFIG_WIFI_CONTROL_FUNC)
 	[SDCC4] = {
 		.name = "sdc_vdd_io",
 		.high_vol_level = 1800000,
@@ -101,6 +110,18 @@ static struct msm_mmc_reg_data mmc_vdd_io_reg_data[MAX_SDCC_CONTROLLER] = {
 		.hpm_uA = 200000, /* 200mA */
 		.lpm_uA = 2000,
 	},
+#else // 
+	// 20120629 use 153611-patch's one except .always_on
+	[SDCC4] = {
+		.name = "sdc_vdd_io",
+		.high_vol_level = 1800000,
+		.low_vol_level = 1800000,
+//		.always_on = 1,
+		.lpm_sup = 1,
+		.hpm_uA = 200000, /* 200mA */
+		.lpm_uA = 2000,
+	},
+#endif // CONFIG_WIFI_CONTROL_FUNC	
 };
 
 static struct msm_mmc_slot_reg_data mmc_slot_vreg_data[MAX_SDCC_CONTROLLER] = {
@@ -119,9 +140,17 @@ static struct msm_mmc_slot_reg_data mmc_slot_vreg_data[MAX_SDCC_CONTROLLER] = {
 		.vdd_io_data = &mmc_vdd_io_reg_data[SDCC3],
 	},
 	/* SDCC4 : SDIO card slot connected */
+#if !defined(CONFIG_WIFI_CONTROL_FUNC)
 	[SDCC4] = {
 		.vdd_io_data = &mmc_vdd_io_reg_data[SDCC4],
 	},
+#else
+	[SDCC4] = {
+		// 20120629 use patch-153611's one.
+		//.vdd_data = &mmc_vdd_reg_data[SDCC4],
+		.vdd_io_data = &mmc_vdd_io_reg_data[SDCC4],
+	},	
+#endif // CONFIG_WIFI_CONTROL_FUNC
 };
 
 /* SDC1 pad data */
@@ -184,6 +213,26 @@ static struct msm_mmc_pad_pull sdc3_pad_pull_off_cfg[] = {
 	{TLMM_PULL_SDC3_DATA, GPIO_CFG_PULL_UP}
 };
 
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+static struct msm_mmc_pad_drv sdc4_pad_drv_on_cfg[] = {
+ {TLMM_HDRV_SDC4_CLK, GPIO_CFG_8MA},
+ {TLMM_HDRV_SDC4_CMD, GPIO_CFG_8MA},
+ {TLMM_HDRV_SDC4_DATA, GPIO_CFG_8MA}
+};
+static struct msm_mmc_pad_drv sdc4_pad_drv_off_cfg[] = {
+	{TLMM_HDRV_SDC4_CLK, GPIO_CFG_2MA},
+	{TLMM_HDRV_SDC4_CMD, GPIO_CFG_2MA},
+	{TLMM_HDRV_SDC4_DATA, GPIO_CFG_2MA}
+};
+static struct msm_mmc_pad_pull sdc4_pad_pull_on_cfg[] = {
+	{TLMM_PULL_SDC4_CMD, GPIO_CFG_PULL_UP},
+	{TLMM_PULL_SDC4_DATA, GPIO_CFG_PULL_UP}
+};
+static struct msm_mmc_pad_pull sdc4_pad_pull_off_cfg[] = {
+	{TLMM_PULL_SDC4_CMD, GPIO_CFG_PULL_UP},
+	{TLMM_PULL_SDC4_DATA, GPIO_CFG_PULL_UP}
+};
+#endif
 static struct msm_mmc_pad_pull_data mmc_pad_pull_data[MAX_SDCC_CONTROLLER] = {
 	[SDCC1] = {
 		.on = sdc1_pad_pull_on_cfg,
@@ -195,6 +244,13 @@ static struct msm_mmc_pad_pull_data mmc_pad_pull_data[MAX_SDCC_CONTROLLER] = {
 		.off = sdc3_pad_pull_off_cfg,
 		.size = ARRAY_SIZE(sdc3_pad_pull_on_cfg)
 	},
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+	[SDCC4] = {
+		.on = sdc4_pad_pull_on_cfg,
+		.off = sdc4_pad_pull_off_cfg,
+		.size = ARRAY_SIZE(sdc4_pad_pull_on_cfg)
+	}
+#endif		
 };
 
 static struct msm_mmc_pad_drv_data mmc_pad_drv_data[MAX_SDCC_CONTROLLER] = {
@@ -208,6 +264,13 @@ static struct msm_mmc_pad_drv_data mmc_pad_drv_data[MAX_SDCC_CONTROLLER] = {
 		.off = sdc3_pad_drv_off_cfg,
 		.size = ARRAY_SIZE(sdc3_pad_drv_on_cfg)
 	},
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+	[SDCC4] = {
+		.on = sdc4_pad_drv_on_cfg,
+		.off = sdc4_pad_drv_off_cfg,
+		.size = ARRAY_SIZE(sdc4_pad_drv_on_cfg)
+	}	
+#endif	
 };
 
 struct msm_mmc_gpio sdc2_gpio[] = {
@@ -248,6 +311,12 @@ static struct msm_mmc_pad_data mmc_pad_data[MAX_SDCC_CONTROLLER] = {
 		.pull = &mmc_pad_pull_data[SDCC3],
 		.drv = &mmc_pad_drv_data[SDCC3]
 	},
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+	[SDCC4] = {
+		.pull = &mmc_pad_pull_data[SDCC4],
+		.drv = &mmc_pad_drv_data[SDCC4]
+	}
+#endif		
 };
 
 static struct msm_mmc_pin_data mmc_slot_pin_data[MAX_SDCC_CONTROLLER] = {
@@ -261,10 +330,16 @@ static struct msm_mmc_pin_data mmc_slot_pin_data[MAX_SDCC_CONTROLLER] = {
 	[SDCC3] = {
 		.pad_data = &mmc_pad_data[SDCC3],
 	},
+#if !defined(CONFIG_WIFI_CONTROL_FUNC)
 	[SDCC4] = {
 		.is_gpio = 1,
 		.gpio_data = &mmc_gpio_data[SDCC4],
 	},
+#else
+	[SDCC4] = {
+			.pad_data = &mmc_pad_data[SDCC4],
+	},
+#endif	// CONFIG_WIFI_CONTROL_FUNC
 };
 
 #define MSM_MPM_PIN_SDC1_DAT1	17
@@ -340,11 +415,39 @@ static struct mmc_platform_data msm8960_sdc3_data = {
 };
 #endif
 
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+//static unsigned int sdc4_sup_clk_rates[] = {
+//	400000, 24000000, 48000000
+//};
+extern int wlan_status_register(
+			void (*callback)(int card_present, void *dev_id),
+			void *dev_id);
+extern unsigned int wlan_status(struct device *dev);
+#endif
+
+
 #ifdef CONFIG_MMC_MSM_SDC4_SUPPORT
 static unsigned int sdc4_sup_clk_rates[] = {
 	400000, 24000000, 48000000
 };
+#ifdef CONFIG_MMC_EMBEDDED_SDIO /* KSLEE temp */
+static struct embedded_sdio_data embedded_sdio_data0 = {
+        .cccr   = {
+                .sdio_vsn       = 2,
+                .multi_block    = 1,
+                .low_speed      = 0,
+                .wide_bus       = 0,
+                .high_power     = 1,
+                .high_speed     = 1,
+        },
+        .cis  = {
+                .vendor         = 0x02d0,
+                .device         = 0x4334,
+        },
+};
+#endif
 
+#if !defined(CONFIG_WIFI_CONTROL_FUNC)
 static struct mmc_platform_data msm8960_sdc4_data = {
 	.ocr_mask       = MMC_VDD_165_195,
 	.mmc_bus_width  = MMC_CAP_4_BIT_DATA,
@@ -355,6 +458,33 @@ static struct mmc_platform_data msm8960_sdc4_data = {
 	.sdiowakeup_irq = MSM_GPIO_TO_INT(85),
 	.msm_bus_voting_data = &sps_to_ddr_bus_voting_data,
 };
+#else // ! CONFIG_WIFI_CONTROL_FUNC
+static struct mmc_platform_data msm8960_sdc4_data = {
+	.ocr_mask       = MMC_VDD_165_195 | MMC_VDD_27_28 | MMC_VDD_28_29,
+	.mmc_bus_width  = MMC_CAP_4_BIT_DATA,
+	.sup_clk_table	= sdc4_sup_clk_rates,
+	.sup_clk_cnt	= ARRAY_SIZE(sdc4_sup_clk_rates),
+//  error: unknown field 'pclk_src_dfab' specified in initializer	
+#if 0	
+	.pclk_src_dfab	= 1,
+#ifdef CONFIG_MMC_MSM_SDC4_WP_SUPPORT
+	.wpswitch_gpio	= PM8921_GPIO_PM_TO_SYS(16),
+#endif
+#endif
+	.vreg_data	= &mmc_slot_vreg_data[SDCC4],
+	.pin_data	= &mmc_slot_pin_data[SDCC4],
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+	.status				= wlan_status,
+	.register_status_notify	= wlan_status_register,
+#ifdef CONFIG_MMC_EMBEDDED_SDIO /* KSLEE temp */
+	.embedded_sdio		= &embedded_sdio_data0,
+#endif
+#endif
+	.sdiowakeup_irq = MSM_GPIO_TO_INT(85),
+	.msm_bus_voting_data = &sps_to_ddr_bus_voting_data,
+};
+#endif // ! CONFIG_WIFI_CONTROL_FUNC
+
 #endif
 
 void __init msm8960_init_mmc(void)

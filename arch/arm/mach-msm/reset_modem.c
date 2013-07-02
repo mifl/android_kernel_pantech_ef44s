@@ -21,6 +21,10 @@
 
 #include "smd_private.h"
 
+#if defined(CONFIG_PANTECH_ERR_CRASH_LOGGING)
+#include "sky_sys_reset.h"
+#endif
+
 #define DEBUG
 /* #undef DEBUG */
 #ifdef DEBUG
@@ -116,7 +120,11 @@ static ssize_t reset_modem_write(struct file *fp, const char __user *buf,
 		  __LINE__,
 		  __func__);
 
+#if 0//defined(CONFIG_PANTECH_ERR_CRASH_LOGGING)
+		r = sky_sys_rst_UserReset_imm(NULL);
+#else
 		r = msm_proc_comm(PCOM_RESET_CHIP_IMM, &param1, &param2);
+#endif
 
 		if (r < 0)
 			return r;
@@ -131,10 +139,54 @@ static ssize_t reset_modem_write(struct file *fp, const char __user *buf,
 		  __LINE__,
 		  __func__);
 
+#if 0//defined(CONFIG_PANTECH_ERR_CRASH_LOGGING)
+		r = sky_sys_rst_UserReset(NULL);
+#else
 		r = msm_proc_comm(PCOM_RESET_CHIP, &param1, &param2);
+#endif
+		if (r < 0)
+			return r;
+#if 0//defined(CONFIG_PANTECH_ERR_CRASH_LOGGING)
+	} else if (!strncmp(cmd, "reset sw now", 12)) {
+		uint param1 = 0x0;
+		uint param2 = 0x0;
+
+		D(KERN_ERR "INFO:%s:%i:%s: "
+		  "MODEM SW RESTART: CHIP RESET IMMEDIATE\n",
+		  __FILE__,
+		  __LINE__,
+		  __func__);
+
+		r = sky_sys_rst_SwReset_imm(NULL);
+
+		if (r < 0)
+		{
+			D(KERN_ERR "ERROR: sky_sys_rst_SwReset_imm failed: %d\n", r);
+			return r;
+		}
+	} else if (!strncmp(cmd, "reset sw", 8)) {
+
+		uint param1 = 0x0;
+		uint param2 = 0x0;
+
+		D(KERN_ERR "INFO:%s:%i:%s: "
+		  "MODEM SW RESTART: CHIP RESET \n",
+		  __FILE__,
+		  __LINE__,
+		  __func__);
+
+		BUG();
+		return 0;
+
+#if 0
+		r = sky_sys_rst_SwReset(NULL);
 
 		if (r < 0)
 			return r;
+#endif
+
+#endif
+        
 	} else if (!strncmp(cmd, "reset", 5)) {
 		printk(KERN_ERR "INFO:%s:%i:%s: "
 		       "MODEM RESTART: RESET\n",

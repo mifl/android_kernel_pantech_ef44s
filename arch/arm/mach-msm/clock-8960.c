@@ -5114,14 +5114,31 @@ static struct clk_lookup msm_clocks_8064[] = {
 	CLK_LOOKUP("core_clk",		gsbi5_uart_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi6_uart_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi7_uart_clk.c, "msm_serial_hsl.0"),
+#if defined(CONFIG_PANTECH_CAMERA_FLASH) || (defined(CONFIG_MACH_MSM8960_VEGAPVW) && defined(CONFIG_PANTECH_PMIC_MAX17058)) || (defined(CONFIG_MACH_MSM8960_SIRIUSLTE) && defined(CONFIG_PANTECH_PMIC_MAX17058))
 	CLK_LOOKUP("core_clk",		gsbi1_qup_clk.c,	"qup_i2c.0"),
+#endif
 	CLK_LOOKUP("core_clk",		gsbi2_qup_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi3_qup_clk.c,	"qup_i2c.3"),
 	CLK_LOOKUP("core_clk",		gsbi4_qup_clk.c,	"qup_i2c.4"),
 	CLK_LOOKUP("core_clk",		gsbi5_qup_clk.c,	"spi_qsd.0"),
+#if defined(CONFIG_MACH_MSM8960_SIRIUSLTE) //p15994
 	CLK_LOOKUP("core_clk",		gsbi5_qup_clk.c,	"qup_i2c.5"),
+#else	
+	CLK_LOOKUP("core_clk",		gsbi5_qup_clk.c,	NULL),
+#endif	
 	CLK_LOOKUP("core_clk",		gsbi6_qup_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi7_qup_clk.c,	""),
+
+#if defined(CONFIG_PANTECH_PMIC_MAX17058)
+#if defined(CONFIG_MACH_MSM8960_EF44S) || defined(T_MAGNUS)
+	CLK_LOOKUP("core_clk",		gsbi9_qup_clk.c,	"qup_i2c.9"),
+#else
+	CLK_LOOKUP("core_clk",		gsbi9_qup_clk.c,	NULL),
+#endif
+#else
+	CLK_LOOKUP("core_clk",		gsbi9_qup_clk.c,	NULL),
+#endif
+
 	CLK_LOOKUP("core_clk",		pdm_clk.c,		""),
 	CLK_LOOKUP("mem_clk",		pmem_clk.c,		"msm_sps"),
 	CLK_LOOKUP("core_clk",          prng_clk.c,		"msm_rng.0"),
@@ -5152,7 +5169,9 @@ static struct clk_lookup msm_clocks_8064[] = {
 	CLK_LOOKUP("ce3_core_src_clk",	ce3_src_clk.c,		"qce.0"),
 	CLK_LOOKUP("ce3_core_src_clk",	ce3_src_clk.c,		"qcrypto.0"),
 	CLK_LOOKUP("dma_bam_pclk",	dma_bam_p_clk.c,	NULL),
+#ifndef CONFIG_PANTECH_CAMERA
 	CLK_LOOKUP("iface_clk",		gsbi1_p_clk.c,	"msm_serial_hsl.1"),
+#endif	
 	CLK_LOOKUP("iface_clk",		gsbi1_p_clk.c,	"qup_i2c.0"),
 	CLK_LOOKUP("iface_clk",		gsbi2_p_clk.c,		""),
 	CLK_LOOKUP("iface_clk",		gsbi3_p_clk.c,		"qup_i2c.3"),
@@ -5163,6 +5182,23 @@ static struct clk_lookup msm_clocks_8064[] = {
 	CLK_LOOKUP("iface_clk",		gsbi7_p_clk.c,	"msm_serial_hsl.0"),
 	CLK_LOOKUP("ref_clk",	tsif_ref_clk.c,	"msm_tspp.0"),
 	CLK_LOOKUP("iface_clk",		tsif_p_clk.c,		"msm_tspp.0"),
+#if defined(CONFIG_PANTECH_PMIC_MAX17058)
+#if defined(CONFIG_MACH_MSM8960_EF44S) || defined(T_MAGNUS)
+	CLK_LOOKUP("iface_clk", 	gsbi9_p_clk.c,	"qup_i2c.9"),
+#else
+#ifdef CONFIG_CXD2235AGC_NFC_FELICA
+	CLK_LOOKUP("iface_clk", 	gsbi9_p_clk.c,	"msm_serial_hsl.1"),
+#else
+	CLK_LOOKUP("iface_clk",		gsbi9_p_clk.c,		NULL),
+#endif	// #ifdef CONFIG_CXD2235AGC_NFC_FELICA
+#endif	// #if defined(T_OSCAR)
+#else // #if defined(CONFIG_PANTECH_PMIC_MAX17058)
+#ifdef CONFIG_CXD2235AGC_NFC_FELICA
+	CLK_LOOKUP("iface_clk", 	gsbi9_p_clk.c,	"msm_serial_hsl.1"),
+#else
+	CLK_LOOKUP("iface_clk",		gsbi9_p_clk.c,		NULL),
+#endif	
+#endif // #if defined(CONFIG_PANTECH_PMIC_MAX17058)
 	CLK_LOOKUP("iface_clk",		usb_fs1_p_clk.c,	""),
 	CLK_LOOKUP("iface_clk",		usb_hs1_p_clk.c,	"msm_otg"),
 	CLK_LOOKUP("iface_clk",         usb_hs3_p_clk.c,     "msm_ehci_host.0"),
@@ -5180,11 +5216,13 @@ static struct clk_lookup msm_clocks_8064[] = {
 	CLK_LOOKUP("iface_clk",		pmic_arb1_p_clk.c,	""),
 	CLK_LOOKUP("core_clk",		pmic_ssbi2_clk.c,	""),
 	CLK_LOOKUP("mem_clk",		rpm_msg_ram_p_clk.c,	""),
+#ifndef CONFIG_PANTECH_CAMERA
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-001a"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0034"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0020"),
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-0048"),
 	CLK_LOOKUP("cam_clk",		cam1_clk.c,	"4-006c"),
+#endif
 	CLK_LOOKUP("csi_src_clk",	csi0_src_clk.c,		"msm_csid.0"),
 	CLK_LOOKUP("csi_src_clk",	csi1_src_clk.c,		"msm_csid.1"),
 	CLK_LOOKUP("csi_src_clk",	csi2_src_clk.c,		"msm_csid.2"),
@@ -5454,19 +5492,41 @@ static struct clk_lookup msm_clocks_8960[] = {
 	CLK_LOOKUP("core_clk",		gsbi10_uart_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi11_uart_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi12_uart_clk.c,	""),
+#ifdef CONFIG_PANTECH_CAMERA_FLASH
+	CLK_LOOKUP("core_clk",		gsbi1_qup_clk.c,	"qup_i2c.1"),
+#else	
+#if defined(CONFIG_PANTECH_PMIC_MAX17058)
 	CLK_LOOKUP("core_clk",		gsbi1_qup_clk.c,	"spi_qsd.0"),
+#endif
+#endif	
 	CLK_LOOKUP("core_clk",		gsbi2_qup_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi3_qup_clk.c,	"qup_i2c.3"),
 	CLK_LOOKUP("core_clk",		gsbi4_qup_clk.c,	"qup_i2c.4"),
 	CLK_LOOKUP("core_clk",		gsbi5_qup_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi6_qup_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi7_qup_clk.c,	""),
+#ifdef CONFIG_SKY_DMB_I2C_HW
+	CLK_LOOKUP("core_clk",		gsbi8_qup_clk.c,	"qup_i2c.8"),
+#else
 	CLK_LOOKUP("core_clk",		gsbi8_qup_clk.c,	""),
+#endif
+#if defined(CONFIG_PANTECH_PMIC_MAX17058)
+#if defined(CONFIG_MACH_MSM8960_EF44S) || defined(T_MAGNUS)//(T_OSCAR)		djjeon 20121111 modify
+	CLK_LOOKUP("core_clk",		gsbi9_qup_clk.c,	"qup_i2c.9"),
+#else
 	CLK_LOOKUP("core_clk",		gsbi9_qup_clk.c,	""),
+#endif
+#else
+	CLK_LOOKUP("core_clk",		gsbi9_qup_clk.c,	NULL),
+#endif
 	CLK_LOOKUP("core_clk",		gsbi10_qup_clk.c,	"qup_i2c.10"),
 	CLK_LOOKUP("core_clk",		gsbi11_qup_clk.c,	""),
 	CLK_LOOKUP("core_clk",		gsbi12_qup_clk.c,	"qup_i2c.12"),
 	CLK_LOOKUP("core_clk",		pdm_clk.c,		""),
+#ifdef CONFIG_SKY_DMB_TSIF_IF
+	CLK_LOOKUP("tsif_pclk",		tsif_p_clk.c,		"msm_tsif.0"),
+	CLK_LOOKUP("tsif_ref_clk",	tsif_ref_clk.c,		"msm_tsif.0"),
+#endif
 	CLK_LOOKUP("mem_clk",		pmem_clk.c,		"msm_sps"),
 	CLK_LOOKUP("core_clk",		prng_clk.c,		"msm_rng.0"),
 	CLK_LOOKUP("core_clk",		sdc1_clk.c,		"msm_sdcc.1"),
@@ -5494,15 +5554,35 @@ static struct clk_lookup msm_clocks_8960[] = {
 	CLK_LOOKUP("core_clk",		ce1_core_clk.c,		"qce.0"),
 	CLK_LOOKUP("core_clk",		ce1_core_clk.c,		"qcrypto.0"),
 	CLK_LOOKUP("dma_bam_pclk",	dma_bam_p_clk.c,	NULL),
+#ifdef CONFIG_PANTECH_CAMERA_FLASH	
+	CLK_LOOKUP("iface_clk",		gsbi1_p_clk.c,		"qup_i2c.1"),
+#else	
+#if defined(CONFIG_PANTECH_PMIC_MAX17058)
 	CLK_LOOKUP("iface_clk",		gsbi1_p_clk.c,		"spi_qsd.0"),
+#else
+	CLK_LOOKUP("iface_clk",		gsbi1_p_clk.c,		"spi_qsd.0"),
+#endif
+#endif
 	CLK_LOOKUP("iface_clk",		gsbi2_p_clk.c,		""),
 	CLK_LOOKUP("iface_clk",		gsbi3_p_clk.c,		"qup_i2c.3"),
 	CLK_LOOKUP("iface_clk",		gsbi4_p_clk.c,		"qup_i2c.4"),
 	CLK_LOOKUP("iface_clk",		gsbi5_p_clk.c,	"msm_serial_hsl.0"),
 	CLK_LOOKUP("iface_clk",		gsbi6_p_clk.c,  "msm_serial_hs.0"),
 	CLK_LOOKUP("iface_clk",		gsbi7_p_clk.c,		""),
+#ifdef CONFIG_SKY_DMB_I2C_HW
+	CLK_LOOKUP("iface_clk",		gsbi8_p_clk.c,		"qup_i2c.8"),
+#else
 	CLK_LOOKUP("iface_clk",		gsbi8_p_clk.c,	"msm_serial_hsl.1"),
+#endif
+#if defined(CONFIG_PANTECH_PMIC_MAX17058)
+#if defined(CONFIG_MACH_MSM8960_EF44S) || defined(T_MAGNUS)//(T_OSCAR)		djjeon 20121111 modify
+	CLK_LOOKUP("iface_clk", 	gsbi9_p_clk.c,	"qup_i2c.9"),
+#else
+	CLK_LOOKUP("iface_clk",		gsbi8_p_clk.c,	"msm_serial_hsl.1"),
+#endif	// #if defined(T_OSCAR)
+#else // #if defined(CONFIG_PANTECH_PMIC_MAX17058)
 	CLK_LOOKUP("iface_clk",		gsbi9_p_clk.c,  "msm_serial_hs.1"),
+#endif // #if defined(CONFIG_PANTECH_PMIC_MAX17058)
 	CLK_LOOKUP("iface_clk",		gsbi10_p_clk.c,		"qup_i2c.10"),
 	CLK_LOOKUP("iface_clk",		gsbi11_p_clk.c,		""),
 	CLK_LOOKUP("iface_clk",		gsbi12_p_clk.c,		"qup_i2c.12"),
@@ -5523,12 +5603,21 @@ static struct clk_lookup msm_clocks_8960[] = {
 	CLK_LOOKUP("iface_clk",		pmic_arb1_p_clk.c,	""),
 	CLK_LOOKUP("core_clk",		pmic_ssbi2_clk.c,	""),
 	CLK_LOOKUP("mem_clk",		rpm_msg_ram_p_clk.c,	""),
+#ifdef CONFIG_PANTECH_CAMERA_CE1502
+	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0078"),
+#endif
+#ifdef CONFIG_PANTECH_CAMERA_YACD5C1SBDBC
+    CLK_LOOKUP("cam_clk",       cam0_clk.c, "4-0040"),//"msm_camera_yacd5c1sbdbc.0"),
+#endif
+	CLK_LOOKUP("cam_clk",		cam2_clk.c,		NULL),
+#ifndef CONFIG_PANTECH_CAMERA
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-001a"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-006c"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0048"),
 	CLK_LOOKUP("cam_clk",		cam2_clk.c,		NULL),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0020"),
 	CLK_LOOKUP("cam_clk",		cam0_clk.c,	"4-0034"),
+#endif
 	CLK_LOOKUP("csi_src_clk",	csi0_src_clk.c,		"msm_csid.0"),
 	CLK_LOOKUP("csi_src_clk",	csi1_src_clk.c,		"msm_csid.1"),
 	CLK_LOOKUP("csi_src_clk",	csi2_src_clk.c,		"msm_csid.2"),

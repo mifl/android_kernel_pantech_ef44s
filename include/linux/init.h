@@ -150,6 +150,9 @@ extern int do_one_initcall(initcall_t fn);
 extern char __initdata boot_command_line[];
 extern char *saved_command_line;
 extern unsigned int reset_devices;
+#ifdef CONFIG_PANTECH_UART_CONSOLE
+extern int allowed_console;
+#endif
 
 /* used by init/main.c */
 void setup_arch(char **);

@@ -1018,6 +1018,11 @@ config SERIAL_MSM_HSL_CONSOLE
 	select SERIAL_CORE_CONSOLE
 	default n
 
+config PANTECH_UART_CONSOLE
+	bool "serial console register enable/disable through command line"
+	depends on SERIAL_MSM_HSL_CONSOLE=y
+	default n
+
 config SERIAL_BCM_BT_LPM
 	tristate "Broadcom Bluetooth Low Power Mode"
 	depends on ARM && ARCH_MSM

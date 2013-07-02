@@ -1250,6 +1250,11 @@ static struct console msm_hsl_console = {
 };
 
 #define MSM_HSL_CONSOLE	(&msm_hsl_console)
+
+#ifdef CONFIG_PANTECH_UART_CONSOLE
+static unsigned enabled_console = 0;
+#endif
+
 /*
  * get_console_state - check the per-port serial console state.
  * @port: uart_port structure describing the port
@@ -1303,6 +1308,13 @@ static ssize_t set_msm_console(struct device *dev,
 	if (enable == cur_state)
 		return count;
 
+#ifdef CONFIG_PANTECH_UART_CONSOLE
+	if(!port->cons) {
+			msm_hsl_uart_driver.cons = MSM_HSL_CONSOLE;
+			port->cons = MSM_HSL_CONSOLE;
+	}
+#endif
+
 	switch (enable) {
 	case 0:
 		pr_debug("%s(): Calling stop_console\n", __func__);
@@ -1328,6 +1340,9 @@ static ssize_t set_msm_console(struct device *dev,
 		msm_hsl_power(port, 0, 1);
 		pm_runtime_enable(&pdev->dev);
 		register_console(port->cons);
+#ifdef CONFIG_PANTECH_UART_CONSOLE
+		enabled_console = 1;
+#endif
 		break;
 	default:
 		return -EINVAL;
@@ -1549,6 +1564,12 @@ static int __init msm_serial_hsl_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_PANTECH_UART_CONSOLE
+	if(!allowed_console) {
+		msm_hsl_uart_driver.cons = NULL;
+	}
+#endif
+
 	ret = uart_register_driver(&msm_hsl_uart_driver);
 	if (unlikely(ret))
 		return ret;
@@ -1570,7 +1591,12 @@ static void __exit msm_serial_hsl_exit(void)
 {
 	debugfs_remove_recursive(debug_base);
 #ifdef CONFIG_SERIAL_MSM_HSL_CONSOLE
+#ifdef CONFIG_PANTECH_UART_CONSOLE
+	if(enabled_console)
+		unregister_console(&msm_hsl_console);
+#else
 	unregister_console(&msm_hsl_console);
+#endif
 #endif
 	platform_driver_unregister(&msm_hsl_platform_driver);
 	uart_unregister_driver(&msm_hsl_uart_driver);

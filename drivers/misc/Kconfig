@@ -653,6 +653,12 @@ config USB_HSIC_SMSC_HUB
 	  This adds support for connecting devices like mouse in HSIC
 	  Host mode.
 
+config PN544
+	bool "NXP PN544 NFC Controller Driver"
+	depends on I2C && ( MACH_MSM8960_EF44S || MACH_MSM8960_VEGAPVW || MACH_MSM8960_MAGNUS)
+	default y
+	help
+	  NXP PN544 Near Field Communication controller support.
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"

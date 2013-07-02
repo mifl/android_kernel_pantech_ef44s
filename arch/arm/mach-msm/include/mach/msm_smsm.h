@@ -96,7 +96,20 @@ extern uint32_t SMSM_NUM_HOSTS;
 #define SMSM_WLAN_TX_ENABLE	0x00000400
 
 #define SMSM_SUBSYS2AP_STATUS         0x00008000
-
+#if defined(CONFIG_PANTECH_PMIC)
+typedef struct
+{
+  uint32_t  power_on_reason;
+	uint32_t  factory_cable_adc;
+	uint32_t  battery_id_adc;
+	uint32_t  hw_rev_adc;
+	uint32_t  power_on_mode;
+	uint8_t   silent_boot_mode;
+	uint32_t  hw_rev;
+	uint32_t  battery_id;
+	uint8_t  backlight_off;
+} oem_pm_smem_vendor1_data_type;
+#endif
 #ifdef CONFIG_MSM_SMD
 void *smem_alloc(unsigned id, unsigned size);
 #else

@@ -127,7 +127,7 @@ config BT_HCIBPA10X
 
 config BT_MSM_SLEEP
 	tristate "MSM Bluesleep driver"
-	depends on BT && SERIAL_MSM_HS
+	depends on BRCM_BT && SERIAL_MSM_HS
 	default n
 	help
 	  Bluetooth MSM bluesleep driver.
@@ -266,4 +266,12 @@ config BT_WILINK
 
 	  Say Y here to compile support for Texas Instrument's WiLink7 driver
 	  into the kernel or say M to compile it as module.
+
+config BRCM_BT_HID
+	tristate "BRCM hid driver"
+	depends on BT
+	help
+	  Bluetooth broadcom hid driver.
+	  This driver provides support for hid profile.
+
 endmenu

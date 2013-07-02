@@ -1,0 +1,180 @@
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/kconfig-language.txt.
+#
+# DMB configuration.
+#
+
+menu "DMB - Digital Multimedia Broadcasting"
+
+config SKY_DMB
+  bool "SKY_DMB support"
+  default n
+  ---help---
+   Say Y here if you have a DMB device
+
+   If unsure, say Y.
+
+
+if SKY_DMB
+
+config SKY_DMB_MODULE
+  tristate "SKY_DMB_MODULE"
+  default n
+  depends on SKY_DMB
+  ---help---
+   select this option for "DMB" hardware support
+
+###################################################################
+# DMB
+
+config SKY_TDMB
+  bool "SKY_TDMB"
+  default n
+  depends on SKY_DMB
+  ---help---
+   select this option for "TDMB" hardware support
+
+config SKY_ISDBT
+  bool "SKY_ISDBT"
+  default n
+  depends on SKY_DMB
+  ---help---
+   select this option for "ISDBT" hardware support
+
+config SKY_ISDBTMM
+  bool "SKY_ISDBTMM"
+  default n
+  depends on SKY_DMB
+  ---help---
+   select this option for "ISDBTMM" hardware support
+
+###################################################################
+# TDMB BB Interface
+
+config SKY_DMB_EBI_IF
+  bool "SKY_DMB_EBI_IF"
+  default n
+  depends on SKY_DMB
+  ---help---
+   select this option for "DMB_EBI_IF" hardware support
+
+
+if SKY_DMB_EBI_IF
+
+config SKY_DMB_EBI_CMD
+  bool "SKY_DMB_EBI_CMD"
+  default n
+  depends on SKY_DMB_EBI_IF
+  ---help---
+   select this option for "DMB_EBI_IF" hardware support
+
+endif # SKY_DMB_EBI_IF
+
+
+config SKY_DMB_TSIF_IF
+  bool "SKY_DMB_TSIF_IF"
+  default n
+  depends on SKY_DMB
+  ---help---
+   select this option for "DMB_TSIF_IF" hardware support
+
+
+config SKY_DMB_I2C_CMD
+  bool "SKY_DMB_I2C_CMD"
+  default n
+  depends on SKY_DMB_TSIF_IF
+  ---help---
+   select this option for "DMB_I2C_CMD" hardware support
+
+
+if SKY_DMB_I2C_CMD
+
+config SKY_DMB_I2C_HW
+  bool "SKY_DMB_I2C_HW"
+  default n
+  depends on SKY_DMB_I2C_CMD
+  ---help---
+   select this option for "DMB_I2C_CMD" hardware support
+
+
+config SKY_DMB_I2C_GPIO
+  bool "SKY_DMB_I2C_GPIO"
+  default n
+  depends on SKY_DMB_I2C_CMD
+  ---help---
+   select this option for "DMB_I2C_CMD" hardware support
+
+endif # SKY_DMB_I2C_CMD
+
+
+config SKY_DMB_SPI_IF
+  bool "SKY_DMB_SPI_IF"
+  default n
+  depends on SKY_DMB
+  ---help---
+   select this option for "DMB_SPI_IF" hardware support
+
+
+if SKY_DMB_SPI_IF
+
+config SKY_DMB_SPI_CMD
+  bool "SKY_DMB_SPI_CMD"
+  default n
+  depends on SKY_DMB_SPI_IF
+  ---help---
+   select this option for "DMB_SPI_IF" hardware support
+
+config SKY_DMB_SPI_HW
+  bool "SKY_DMB_SPI_HW"
+  default n
+  depends on SKY_DMB_SPI_IF
+  ---help---
+   select this option for "DMB_SPI_IF" hardware support
+
+config SKY_DMB_SPI_TEGRA
+  bool "SKY_DMB_SPI_TEGRA"
+  default n
+  depends on SKY_DMB_SPI_IF
+  ---help---
+   select this option for "DMB_SPI_IF" hardware support
+
+config SKY_DMB_SPI_GPIO
+  bool "SKY_DMB_SPI_GPIO"
+  default n
+  depends on SKY_DMB_SPI_IF
+  ---help---
+   select this option for "DMB_SPI_IF" hardware support
+
+endif # SKY_DMB_SPI_IF
+
+
+###################################################################
+# DMB PMIC CLOCK
+
+config SKY_DMB_PMIC_19200
+  bool "SKY_DMB_PMIC_19200"
+  default n
+  depends on SKY_DMB
+  ---help---
+   select this option for "DMB" hardware support
+
+
+###################################################################
+
+if SKY_TDMB
+  source "drivers/dmb/tdmb/Kconfig"
+endif # SKY_TDMB
+
+if SKY_ISDBT
+  source "drivers/dmb/isdbt/Kconfig"
+endif # SKY_ISDBT
+
+if SKY_ISDBTMM
+  source "drivers/dmb/isdbtmm/Kconfig"
+endif # SKY_ISDBTMM
+
+
+endif # SKY_DMB
+
+endmenu

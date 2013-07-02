@@ -15,6 +15,10 @@
 
 #include <linux/errno.h>
 
+#if defined(CONFIG_PANTECH_PMIC_MAX17058)
+#include <linux/types.h>
+#endif
+
 #define PM8921_BMS_DEV_NAME	"pm8921-bms"
 
 #define FCC_CC_COLS		5
@@ -27,6 +31,292 @@
 #define PC_TEMP_COLS		8
 
 #define MAX_SINGLE_LUT_COLS	20
+
+#ifdef CONFIG_PANTECH_BMS_UPDATE
+#define PANTECH_BMS_UPDATE_UI_FULL
+#ifdef PANTECH_BMS_UPDATE_UI_FULL
+#define UI_FULL_SOC     95  // UI FULL for SOC = 99% 
+#endif
+#endif
+
+#ifdef CONFIG_PANTECH_BMS_BATTERY_TYPE
+#if defined(CONFIG_MACH_MSM8960_STARQ)
+#define BATTERY_ID_STD_MIN      330000
+#define BATTERY_ID_STD_MAX     430000
+#define BATTERY_ID_EXT_MIN      550000
+#define BATTERY_ID_EXT_MAX      700000
+
+// STANDARD BATTERY
+#define CHG_MAX_VOLTAGE_STD 4200
+#define CHG_MIN_VOLTAGE_STD 3600
+#define CHG_RESUME_VOLTAGE_STD 50
+#define CHG_TERM_CURRENT_STD 50
+#define CHG_COOL_BAT_VOLTAGE_STD 4000
+#define CHG_WARM_BAT_VOLTAGE_STD 4000
+#define CHG_SAFETY_TIME_STD 600 //10hours
+#define CHG_TTRKL_TIME_STD  30
+//#define BMS_ITEST_STD  1166 // 3.55(UUC) = 3.2(v_failure) + x(i_test) * 300(rbatt) ; x = 1.166A, 305mohm(rbatt) = 185mohm(rbatt) * 1.65(1% rbatt scalefacor in room temperature )
+//#define BMS_ITEST_STD  1333 // 3.6(UUC) = 3.2(v_failure) + x(i_test) * 300(rbatt) ; x = 1.333A, 305mohm(rbatt) = 185mohm(rbatt) * 1.65(1% rbatt scalefacor in room temperature )
+#define BMS_ITEST_STD 1104
+
+// LARGE BATTERY
+#define CHG_MAX_VOLTAGE_EXT 4200
+#define CHG_MIN_VOLTAGE_EXT 3600
+#define CHG_RESUME_VOLTAGE_EXT 50
+#define CHG_TERM_CURRENT_EXT 50
+#define CHG_COOL_BAT_VOLTAGE_EXT 4000
+#define CHG_WARM_BAT_VOLTAGE_EXT 4000
+#define CHG_SAFETY_TIME_EXT 1080 //18hours
+#define CHG_TTRKL_TIME_EXT  30
+#define BMS_ITEST_EXT  1590 // cut-off 3.55
+#elif defined (CONFIG_MACH_MSM8960_EF45K)
+#define BATTERY_ID_STD_MIN      330000
+#define BATTERY_ID_STD_MAX      430000
+#define BATTERY_ID_EXT_MIN       45000
+#define BATTERY_ID_EXT_MAX      110000
+
+// STANDARD BATTERY
+#define CHG_MAX_VOLTAGE_STD 4360 //4350
+#define CHG_MIN_VOLTAGE_STD 3600
+#define CHG_RESUME_VOLTAGE_STD 40 //50
+#define CHG_TERM_CURRENT_STD 50
+#define CHG_COOL_BAT_VOLTAGE_STD 4360 //4350
+#define CHG_WARM_BAT_VOLTAGE_STD 4360 //4350
+#define CHG_SAFETY_TIME_STD 600 //10hours
+#define CHG_TTRKL_TIME_STD  64
+//#define BMS_ITEST_STD  777 // 3.55(UUC) = 3.2(v_failure) + x(i_test) * 450(rbatt) ; x = 777A, 454mohm(rbatt) = 177mohm(rbatt) * 2.57(1% rbatt scalefacor in room temperature )
+//#define BMS_ITEST_STD  888 // 3.6(UUC) = 3.2(v_failure) + x(i_test) * 450(rbatt) ; x = 888A, 454mohm(rbatt) = 177mohm(rbatt) * 2.57(1% rbatt scalefacor in room temperature )
+//#define BMS_ITEST_STD  860
+#define BMS_ITEST_STD  1060
+
+// LARGE BATTERY
+#define CHG_MAX_VOLTAGE_EXT 4360 //4350
+#define CHG_MIN_VOLTAGE_EXT 3600
+#define CHG_RESUME_VOLTAGE_EXT 40 //50
+#define CHG_TERM_CURRENT_EXT 50
+#define CHG_COOL_BAT_VOLTAGE_EXT 4360 //4350
+#define CHG_WARM_BAT_VOLTAGE_EXT 4360 //4350
+#define CHG_SAFETY_TIME_EXT 1080 //18hours
+#define CHG_TTRKL_TIME_EXT  64
+#define BMS_ITEST_EXT  575
+#elif defined (CONFIG_MACH_MSM8960_EF47S)
+#define BATTERY_ID_STD_MIN      330000
+#define BATTERY_ID_STD_MAX      430000
+#define BATTERY_ID_EXT_MIN       45000
+#define BATTERY_ID_EXT_MAX      110000
+
+// STANDARD BATTERY
+#define CHG_MAX_VOLTAGE_STD 4360 //4350
+#define CHG_MIN_VOLTAGE_STD 3600
+#define CHG_RESUME_VOLTAGE_STD 40 //50
+#define CHG_TERM_CURRENT_STD 50
+#define CHG_COOL_BAT_VOLTAGE_STD 4360 //4350
+#define CHG_WARM_BAT_VOLTAGE_STD 4360 //4350
+#define CHG_SAFETY_TIME_STD 600 //10hours
+#define CHG_TTRKL_TIME_STD  64
+//#define BMS_ITEST_STD  777
+//#define BMS_ITEST_STD  888
+//#define BMS_ITEST_STD  860
+#define BMS_ITEST_STD  1060
+
+// LARGE BATTERY
+#define CHG_MAX_VOLTAGE_EXT 4360 //4350
+#define CHG_MIN_VOLTAGE_EXT 3600
+#define CHG_RESUME_VOLTAGE_EXT 40 //50
+#define CHG_TERM_CURRENT_EXT 50
+#define CHG_COOL_BAT_VOLTAGE_EXT 4360 //4350
+#define CHG_WARM_BAT_VOLTAGE_EXT 4360 //4350
+#define CHG_SAFETY_TIME_EXT 1080 //18hours
+#define CHG_TTRKL_TIME_EXT  64
+#define BMS_ITEST_EXT  575
+#elif defined (CONFIG_MACH_MSM8960_EF46L)
+#define BATTERY_ID_STD_MIN      330000
+#define BATTERY_ID_STD_MAX      430000
+#define BATTERY_ID_EXT_MIN       45000
+#define BATTERY_ID_EXT_MAX      110000
+
+// STANDARD BATTERY
+#define CHG_MAX_VOLTAGE_STD 4360 //4350
+#define CHG_MIN_VOLTAGE_STD 3600
+#define CHG_RESUME_VOLTAGE_STD 40 //50
+#define CHG_TERM_CURRENT_STD 50
+#define CHG_COOL_BAT_VOLTAGE_STD 4360 //4350
+#define CHG_WARM_BAT_VOLTAGE_STD 4360 //4350
+#define CHG_SAFETY_TIME_STD 600 //10hours
+#define CHG_TTRKL_TIME_STD  64
+//#define BMS_ITEST_STD  777
+//#define BMS_ITEST_STD  888
+//#define BMS_ITEST_STD  860
+#define BMS_ITEST_STD  1060
+
+// LARGE BATTERY
+#define CHG_MAX_VOLTAGE_EXT 4360 //4350
+#define CHG_MIN_VOLTAGE_EXT 3600
+#define CHG_RESUME_VOLTAGE_EXT 40 //50
+#define CHG_TERM_CURRENT_EXT 50
+#define CHG_COOL_BAT_VOLTAGE_EXT 4360 //4350
+#define CHG_WARM_BAT_VOLTAGE_EXT 4360 //4350
+#define CHG_SAFETY_TIME_EXT 1080 //18hours
+#define CHG_TTRKL_TIME_EXT  64
+#define BMS_ITEST_EXT  575
+#elif defined (CONFIG_MACH_MSM8960_EF44S)
+#define BATTERY_ID_STD_MIN       330000
+#define BATTERY_ID_STD_MAX       430000
+#define BATTERY_ID_EXT_MIN       330000
+#define BATTERY_ID_EXT_MAX       430000
+
+// STANDARD BATTERY
+#define CHG_MAX_VOLTAGE_STD      4360
+#define CHG_MIN_VOLTAGE_STD      3600
+#define CHG_RESUME_VOLTAGE_STD   30
+#define CHG_TERM_CURRENT_STD     50
+#define CHG_COOL_BAT_VOLTAGE_STD 4360
+#define CHG_WARM_BAT_VOLTAGE_STD 4360
+#define CHG_SAFETY_TIME_STD      600 //10hours
+#define CHG_TTRKL_TIME_STD       64
+#define BMS_ITEST_STD  1060
+
+// LARGE BATTERY
+#define CHG_MAX_VOLTAGE_EXT      4360
+#define CHG_MIN_VOLTAGE_EXT      3600
+#define CHG_RESUME_VOLTAGE_EXT   30
+#define CHG_TERM_CURRENT_EXT     50
+#define CHG_COOL_BAT_VOLTAGE_EXT 4360
+#define CHG_WARM_BAT_VOLTAGE_EXT 4360
+#define CHG_SAFETY_TIME_EXT      600 //10hours
+#define CHG_TTRKL_TIME_EXT       64
+#define BMS_ITEST_EXT  575
+#elif defined (CONFIG_MACH_MSM8960_OSCAR)
+#define BATTERY_ID_STD_MIN       330000
+#define BATTERY_ID_STD_MAX       430000
+#define BATTERY_ID_EXT_MIN        50000
+#define BATTERY_ID_EXT_MAX       100000
+
+// Standard Battery
+#define CHG_MAX_VOLTAGE_STD      4360
+#define CHG_MIN_VOLTAGE_STD      3600
+#define CHG_RESUME_VOLTAGE_STD   60
+#define CHG_TERM_CURRENT_STD     50
+#define CHG_COOL_BAT_VOLTAGE_STD 4000
+#define CHG_WARM_BAT_VOLTAGE_STD 4000
+#define CHG_SAFETY_TIME_STD      512
+#define CHG_TTRKL_TIME_STD       64
+#define BMS_ITEST_STD  988 // cut-off 3.6
+
+// External Battery
+#define CHG_MAX_VOLTAGE_EXT      4360
+#define CHG_MIN_VOLTAGE_EXT      3600
+#define CHG_RESUME_VOLTAGE_EXT   60
+#define CHG_TERM_CURRENT_EXT     50
+#define CHG_COOL_BAT_VOLTAGE_EXT 4000
+#define CHG_WARM_BAT_VOLTAGE_EXT 4000
+#define CHG_SAFETY_TIME_EXT      512
+#define CHG_TTRKL_TIME_EXT       64
+#define BMS_ITEST_EXT  988 // cut-off 3.6
+#elif defined (CONFIG_MACH_MSM8960_VEGAPVW)
+#define BATTERY_ID_LG_STD_MIN       329000
+#define BATTERY_ID_LG_STD_MAX       444000
+#define BATTERY_ID_SS_STD_MIN       40000
+#define BATTERY_ID_SS_STD_MAX       120000
+#define BATTERY_ID_EXT_MIN       531000
+#define BATTERY_ID_EXT_MAX       717000
+
+// Standard Battery
+#define CHG_MAX_VOLTAGE_STD      4350
+#define CHG_MIN_VOLTAGE_STD      3600
+#define CHG_RESUME_VOLTAGE_STD   50
+#define CHG_TERM_CURRENT_STD     50
+#define CHG_COOL_BAT_VOLTAGE_STD 4000
+#define CHG_WARM_BAT_VOLTAGE_STD 4000
+#define CHG_SAFETY_TIME_STD 600 //10hours
+#define CHG_TTRKL_TIME_STD       64
+#define BMS_ITEST_STD  1060
+
+// External Battery
+#define CHG_MAX_VOLTAGE_EXT      4350
+#define CHG_MIN_VOLTAGE_EXT      3600
+#define CHG_RESUME_VOLTAGE_EXT   50
+#define CHG_TERM_CURRENT_EXT     50
+#define CHG_COOL_BAT_VOLTAGE_EXT 4000
+#define CHG_WARM_BAT_VOLTAGE_EXT 4000
+#define CHG_SAFETY_TIME_EXT 1080 //18hours
+#define CHG_TTRKL_TIME_EXT       64
+#define BMS_ITEST_EXT  575
+
+#elif defined (CONFIG_MACH_MSM8960_MAGNUS)
+#define BATTERY_ID_SY_STD_MIN    30000
+#define BATTERY_ID_SY_STD_MAX    130000
+#define BATTERY_ID_SS_STD_MIN    330000
+#define BATTERY_ID_SS_STD_MAX    430000
+#define BATTERY_ID_EXT_MIN       BATTERY_ID_SS_STD_MIN
+#define BATTERY_ID_EXT_MAX       BATTERY_ID_SS_STD_MAX
+
+// Standard Battery
+#define CHG_MAX_VOLTAGE_STD      4360
+#define CHG_MIN_VOLTAGE_STD      3600
+#define CHG_RESUME_VOLTAGE_STD   50
+#define CHG_TERM_CURRENT_STD     50 
+#define CHG_COOL_BAT_VOLTAGE_STD 4360
+#define CHG_WARM_BAT_VOLTAGE_STD 4000
+#define CHG_SAFETY_TIME_STD      600
+#define CHG_TTRKL_TIME_STD       64
+#define BMS_ITEST_STD  1060
+
+// External Battery
+#define CHG_MAX_VOLTAGE_EXT      4360
+#define CHG_MIN_VOLTAGE_EXT      3600
+#define CHG_RESUME_VOLTAGE_EXT   50
+#define CHG_TERM_CURRENT_EXT     50
+#define CHG_COOL_BAT_VOLTAGE_EXT 4360
+#define CHG_WARM_BAT_VOLTAGE_EXT 4000
+#define CHG_SAFETY_TIME_EXT      600
+#define CHG_TTRKL_TIME_EXT       64
+#define BMS_ITEST_EXT  575
+
+#else
+#define BATTERY_ID_STD_MIN      330000
+#define BATTERY_ID_STD_MAX     430000
+#define BATTERY_ID_EXT_MIN      550000
+#define BATTERY_ID_EXT_MAX      700000
+
+// STANDARD BATTERY
+#define CHG_MAX_VOLTAGE_STD 4200
+#define CHG_MIN_VOLTAGE_STD 3600
+#define CHG_RESUME_VOLTAGE_STD 50
+#define CHG_TERM_CURRENT_STD 50
+#define CHG_COOL_BAT_VOLTAGE_STD 4200
+#define CHG_WARM_BAT_VOLTAGE_STD 4200
+#define CHG_SAFETY_TIME_STD 600 //10hours
+#define CHG_TTRKL_TIME_STD  64
+#define BMS_ITEST_STD  2000
+
+// LARGE BATTERY
+#define CHG_MAX_VOLTAGE_EXT 4200
+#define CHG_MIN_VOLTAGE_EXT 3600
+#define CHG_RESUME_VOLTAGE_EXT 50
+#define CHG_TERM_CURRENT_EXT 50
+#define CHG_COOL_BAT_VOLTAGE_EXT 4200
+#define CHG_WARM_BAT_VOLTAGE_EXT 4200
+#define CHG_SAFETY_TIME_EXT 1080 //18hours
+#define CHG_TTRKL_TIME_EXT  64
+#define BMS_ITEST_EXT  2000
+#endif //defined(CONFIG_MACH_MSM8960_STARQ)
+
+#ifdef FEATURE_PANTECH_BATTERY_DUMMY
+#if defined (CONFIG_MACH_MSM8960_VEGAPVW) 
+#define BATTERY_ID_DUMMY_MIN   980000
+#define BATTERY_ID_DUMMY_MAX   1200000
+#elif  defined (CONFIG_MACH_MSM8960_MAGNUS)
+#define BATTERY_ID_DUMMY_MIN   980000
+#define BATTERY_ID_DUMMY_MAX   1200000
+#define BATTERY_ID_DUMMY_MIN_OLD   1420000
+#define BATTERY_ID_DUMMY_MAX_OLD   1620000
+#else
+#define BATTERY_ID_DUMMY_MIN   1420000
+#define BATTERY_ID_DUMMY_MAX   1620000
+#endif
+#endif /* FEATURE_PANTECH_BATTERY_DUMMY */
+#endif
 
 struct single_row_lut {
 	int x[MAX_SINGLE_LUT_COLS];
@@ -126,19 +416,21 @@ struct pm8921_bms_platform_data {
 	enum battery_type		battery_type;
 	unsigned int			r_sense;
 	unsigned int			i_test;
-	unsigned int			v_cutoff;
+	unsigned int			v_failure;
+	unsigned int			calib_delay_ms;
 	unsigned int			max_voltage_uv;
 	unsigned int			rconn_mohm;
 	int				enable_fcc_learning;
-	int				shutdown_soc_valid_limit;
-	int				ignore_shutdown_soc;
-	int				adjust_soc_low_threshold;
-	int				chg_term_ua;
 };
 
 #if defined(CONFIG_PM8921_BMS) || defined(CONFIG_PM8921_BMS_MODULE)
+#ifdef CONFIG_PANTECH_BMS_BATTERY_TYPE
+extern struct pm8921_bms_battery_data  pantech_battery_std;
+extern struct pm8921_bms_battery_data  pantech_battery_ext;
+#else
 extern struct pm8921_bms_battery_data  palladium_1500_data;
 extern struct pm8921_bms_battery_data  desay_5200_data;
+#endif
 /**
  * pm8921_bms_get_vsense_avg - return the voltage across the sense
  *				resitor in microvolts
@@ -205,13 +497,17 @@ int pm8921_bms_get_simultaneous_battery_voltage_and_current(int *ibat_ua,
  * pm8921_bms_get_rbatt - function to get the battery resistance in mOhm.
  */
 int pm8921_bms_get_rbatt(void);
+#ifdef CONFIG_PANTECH_BMS_UPDATE
 /**
- * pm8921_bms_invalidate_shutdown_soc - function to notify the bms driver that
- *					the battery was replaced between reboot
- *					and so it should not use the shutdown
- *					soc stored in a coincell backed register
+ * pm8921_bms_get_percent - returns the battery in percent
+ *
  */
-void pm8921_bms_invalidate_shutdown_soc(void);
+#if defined(CONFIG_PANTECH_PMIC_MAX17058)
+int pm8921_bms_get_percent(bool max17058_uses);
+#else
+int pm8921_bms_get_percent(void); 
+#endif
+#endif
 #else
 static inline int pm8921_bms_get_vsense_avg(int *result)
 {
@@ -247,9 +543,19 @@ static inline int pm8921_bms_get_rbatt(void)
 {
 	return -EINVAL;
 }
-static inline void pm8921_bms_invalidate_shutdown_soc(void)
+#ifdef CONFIG_PANTECH_BMS_UPDATE
+#if defined(CONFIG_PANTECH_PMIC_MAX17058)
+static inline int pm8921_bms_get_percent(bool max17058_uses);
 {
+	return -ENXIO;
 }
+#else 
+static inline int pm8921_bms_get_percent(void)
+{
+	return -ENXIO;
+}
+#endif
+#endif
 #endif
 
 #endif

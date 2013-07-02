@@ -1,0 +1,25 @@
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/kconfig-language.txt.
+#
+# ISDBTmm configuration.
+#
+
+menu "ISDBTMM"
+
+if SKY_ISDBTMM
+
+###################################################################
+# ISDBTMM BB Chip
+
+config CONFIG_SKY_ISDBTMM_SHARP_BB
+  bool "CONFIG_SKY_ISDBTMM_SHARP_BB"
+  default n
+  depends on SKY_ISDBTMM
+  ---help---
+   select this option for "ISDBTMM" hardware support
+
+
+endif # SKY_ISDBTMM
+
+endmenu

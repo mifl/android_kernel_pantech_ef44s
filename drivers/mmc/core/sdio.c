@@ -258,6 +258,8 @@ static int sdio_disable_cd(struct mmc_card *card)
 	return mmc_io_rw_direct(card, 1, 0, SDIO_CCCR_IF, ctrl, NULL);
 }
 
+
+#if !defined(CONFIG_SKY_WLAN_MMC)
 /*
  * Devices that remain active during a system suspend are
  * put back into 1-bit mode.
@@ -291,7 +293,7 @@ static int sdio_disable_wide(struct mmc_card *card)
 
 	return 0;
 }
-
+#endif // !CONFIG_SKY_WLAN_MMC
 
 static int sdio_enable_4bit_bus(struct mmc_card *card)
 {
@@ -944,11 +946,14 @@ static int mmc_sdio_suspend(struct mmc_host *host)
 		}
 	}
 
+// lcj@LS3 wifi suspend/resume patch
+#if !defined(CONFIG_SKY_WLAN_MMC)
 	if (!err && mmc_card_keep_power(host) && mmc_card_wake_sdio_irq(host)) {
 		mmc_claim_host(host);
 		sdio_disable_wide(host->card);
 		mmc_release_host(host);
 	}
+#endif // CONFIG_SKY_WLAN_MMC
 
 	return err;
 }
@@ -960,6 +965,8 @@ static int mmc_sdio_resume(struct mmc_host *host)
 	BUG_ON(!host);
 	BUG_ON(!host->card);
 
+// lcj@LS3 wifi suspend/resume patch
+#if !defined(CONFIG_SKY_WLAN_MMC)
 	/* Basic card reinitialization. */
 	mmc_claim_host(host);
 
@@ -984,6 +991,7 @@ static int mmc_sdio_resume(struct mmc_host *host)
 	if (!err && host->sdio_irqs)
 		wake_up_process(host->sdio_irq_thread);
 	mmc_release_host(host);
+#endif // CONFIG_SKY_WLAN_MMC
 
 	/*
 	 * If the card looked to be the same as before suspending, then
@@ -1101,12 +1109,29 @@ int mmc_attach_sdio(struct mmc_host *host)
 	 * Sanity check the voltages that the card claims to
 	 * support.
 	 */
+#ifndef CONFIG_WIFI_CONTROL_FUNC /* KSLEE temp */
 	if (ocr & 0x7F) {
 		pr_warning("%s: card claims to support voltages "
 		       "below the defined range. These will be ignored.\n",
 		       mmc_hostname(host));
 		ocr &= ~0x7F;
 	}
+#else
+	if (ocr & 0xFF) {
+		pr_warning("%s: card claims to support voltages "
+		       "below the defined range. These will be ignored.\n",
+		       mmc_hostname(host));
+		ocr &= ~0xFF;
+	}
+#endif
+#if 0
+       if (ocr & MMC_VDD_165_195) {
+               printk(KERN_WARNING "%s: SDIO card claims to support the "
+                      "incompletely defined 'low voltage range'. This "
+                      "will be ignored.\n", mmc_hostname(host));
+               ocr &= ~MMC_VDD_165_195;
+       }
+#endif
 
 	host->ocr = mmc_select_voltage(host, ocr);
 

@@ -394,8 +394,14 @@ int mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
 		  (value << 8) |
 		  set;
 		cmd.flags = MMC_CMD_AC;
+
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+	if (index == EXT_CSD_BKOPS_START)
+#else
 	if (index == EXT_CSD_BKOPS_START &&
 	    card->ext_csd.raw_bkops_status < EXT_CSD_BKOPS_LEVEL_2)
+#endif
 		cmd.flags |= MMC_RSP_SPI_R1 | MMC_RSP_R1;
 	else
 		cmd.flags |= MMC_RSP_SPI_R1B | MMC_RSP_R1B;

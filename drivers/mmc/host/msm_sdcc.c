@@ -59,7 +59,9 @@
 
 #include "msm_sdcc.h"
 #include "msm_sdcc_dml.h"
-
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+#include "../core/core.h"
+#endif
 #define DRIVER_NAME "msm-sdcc"
 
 #define DBG(host, fmt, args...)	\
@@ -122,6 +124,9 @@ static const u32 tuning_block_128[] = {
 	0xFFFFBBBB, 0xFFFF77FF, 0xFF7777FF, 0xEEDDBB77
 };
 
+#if CONFIG_PANTECH_MMC
+static unsigned int msmsdcc_slot_status(struct msmsdcc_host *host);
+#endif
 #if IRQ_DEBUG == 1
 static char *irq_status_bits[] = { "cmdcrcfail", "datcrcfail", "cmdtimeout",
 				   "dattimeout", "txunderrun", "rxoverrun",
@@ -2089,6 +2094,16 @@ msmsdcc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		host->curr.req_tout_ms = 20000;
 	else
 		host->curr.req_tout_ms = MSM_MMC_REQ_TIMEOUT;
+
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+	if(mrq->cmd->opcode == MMC_SWITCH
+		&& ((mrq->cmd->arg >> 16)&0xFF) == EXT_CSD_BKOPS_START
+		){
+		host->curr.req_tout_ms = MSM_MMC_REQ_TIMEOUT*6;  // 1 min
+	}
+#endif
+
 	/*
 	 * Kick the software request timeout timer here with the timeout
 	 * value identified above
@@ -2573,6 +2588,75 @@ out:
 	return rc;
 }
 
+
+// p10998@LS3 enable/disable cc_sdc4_hclk, cc_sdc4_apps_clk clock by manual.
+//LS3_LeeYoungHo_120626_chg [ 
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+int msmsdcc_runtime_suspend_mmc2(struct msmsdcc_host *host, 	struct mmc_host *mmc)
+{
+	int rc = 0;
+	unsigned long flags;
+
+	if (mmc) 
+	{
+				mmc_host_clk_hold(mmc);
+				spin_lock_irqsave(&mmc->clk_lock, flags);
+				mmc->clk_old = mmc->ios.clock;
+				mmc->ios.clock = 0;
+				mmc->clk_gated = true;
+				spin_unlock_irqrestore(&mmc->clk_lock, flags);
+				mmc_set_ios(mmc);
+				//printk("%s: %s: mmc_set_ios\n", mmc_hostname(mmc), __func__);
+				mmc_host_clk_release(mmc);
+	}
+
+	return rc;
+}
+
+
+
+int msmsdcc_runtime_resume_mmc2(struct msmsdcc_host *host, 	struct mmc_host *mmc)
+{
+	if (mmc)
+	{
+			mmc_host_clk_hold(mmc);
+			mmc->ios.clock = host->clk_rate;
+			mmc_set_ios(mmc);
+			//printk("%s: %s: mmc_set_ios\n", mmc_hostname(mmc), __func__);
+			mmc_host_clk_release(mmc);
+ 		mmc_resume_host(mmc);
+	}
+	return 0;
+}
+
+
+static struct msmsdcc_host *mmc2_host ;
+int board_msmsdcc_setup_clocks(bool enable)
+{
+    pr_info( "%s: mmc=%p, enable=%d\n", __func__, mmc2_host, enable) ;
+    if( mmc2_host ) {
+        if(enable)
+        {
+#ifdef CONFIG_MMC_CLKGATE
+          mmc_ungate_clock(mmc2_host->mmc);
+#else		  
+          msmsdcc_runtime_resume_mmc2(mmc2_host,mmc2_host->mmc);
+#endif
+        }
+        else
+        {
+#ifdef CONFIG_MMC_CLKGATE		
+          mmc_gate_clock(mmc2_host->mmc);
+#else		  
+          msmsdcc_runtime_suspend_mmc2(mmc2_host,mmc2_host->mmc);
+#endif
+        }
+    }
+    return 0 ;
+}
+EXPORT_SYMBOL(board_msmsdcc_setup_clocks) ;
+#endif // CONFIG_WIFI_CONTROL_FUNC
+
 static inline unsigned int msmsdcc_get_sup_clk_rate(struct msmsdcc_host *host,
 						unsigned int req_clk)
 {
@@ -2745,11 +2829,46 @@ static u32 msmsdcc_setup_pwr(struct msmsdcc_host *host, struct mmc_ios *ios)
 	u32 pwr = 0;
 	int ret = 0;
 	struct mmc_host *mmc = host->mmc;
-
-	if (host->plat->translate_vdd && !host->sdio_gpio_lpm)
+#if CONFIG_PANTECH_MMC 
+    unsigned int slot_status;
+#endif
+	if (host->plat->translate_vdd && !host->sdio_gpio_lpm) {
+#if CONFIG_PANTECH_MMC 
+            if(host->pdev_id == 3 && ios->power_mode == MMC_POWER_OFF){
+                slot_status = msmsdcc_slot_status(host);
+                if(mmc->bus_ops != NULL && slot_status){
+                    ret = host->plat->translate_vdd(mmc_dev(mmc), 1); /* always on sdcc power */
+                } else {
 		ret = host->plat->translate_vdd(mmc_dev(mmc), ios->vdd);
-	else if (!host->plat->translate_vdd && !host->sdio_gpio_lpm)
+                    /* case sdcc_inserted & normal status */
+                if(!mmc->bus_ops && slot_status)
+                    msleep(500);
+                }
+            } else {
+               ret = host->plat->translate_vdd(mmc_dev(mmc), ios->vdd);    
+            }
+#else
+		ret = host->plat->translate_vdd(mmc_dev(mmc), ios->vdd);
+#endif
+	} else if (!host->plat->translate_vdd && !host->sdio_gpio_lpm) {
+#if CONFIG_PANTECH_MMC 
+            if(host->pdev_id == 3 && ios->power_mode == MMC_POWER_OFF){
+                slot_status = msmsdcc_slot_status(host);
+                if(mmc->bus_ops != NULL && slot_status){
+                    ret = msmsdcc_setup_vreg(host, 1, true); /* always on sdcc power */
+                } else {
 		ret = msmsdcc_setup_vreg(host, !!ios->vdd, false);
+                    /* case sdcc_inserted & normal status */
+                if(!mmc->bus_ops && slot_status)
+                    msleep(500);
+                }
+            } else {
+               ret = msmsdcc_setup_vreg(host, !!ios->vdd, false);    
+            }
+#else
+		ret = msmsdcc_setup_vreg(host, !!ios->vdd, false);
+#endif		
+    }
 
 	if (ret) {
 		pr_err("%s: Failed to setup voltage regulators\n",
@@ -5508,6 +5627,12 @@ msmsdcc_probe(struct platform_device *pdev)
 		}
 	} else if (plat->register_status_notify) {
 		plat->register_status_notify(msmsdcc_status_notify_cb, host);
+#ifdef CONFIG_SKY_WLAN_MMC
+	if(!strcmp(mmc_hostname(mmc),"mmc2"))
+	{
+		mmc->pm_flags |= MMC_PM_IGNORE_PM_NOTIFY;
+	}
+#endif // CONFIG_SKY_WLAN_MMC	
 	} else if (!plat->status)
 		pr_err("%s: No card detect facilities available\n",
 		       mmc_hostname(mmc));
@@ -5551,6 +5676,14 @@ msmsdcc_probe(struct platform_device *pdev)
 			(unsigned long)host);
 
 	mmc_add_host(mmc);
+
+#ifdef CONFIG_WIFI_CONTROL_FUNC
+    // p10998@LS3 enable/disable mmc clock.
+    if( strcmp(mmc_hostname(mmc), "mmc2")==0) {
+        printk("host= %p, host->mmc=%p\n",host, host->mmc) ;
+        mmc2_host = host ;
+    }
+#endif//LS3_LeeYoungHo_120619_chg_end
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	host->early_suspend.suspend = msmsdcc_early_suspend;

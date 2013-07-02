@@ -29,6 +29,12 @@
 
 #include <asm/ioctls.h>
 
+//---------------------------------------------------
+// PS1 Team add
+#define FEATURE_SKY_CP_ADB_LOG_FOR_VITAMIN
+//--------------------------------------------------
+
+
 /*
  * struct logger_log - represents a specific log, such as 'main' or 'radio'
  *
@@ -733,6 +739,10 @@ DEFINE_LOGGER_DEVICE(log_events, LOGGER_LOG_EVENTS, 256*1024)
 DEFINE_LOGGER_DEVICE(log_radio, LOGGER_LOG_RADIO, 256*1024)
 DEFINE_LOGGER_DEVICE(log_system, LOGGER_LOG_SYSTEM, 256*1024)
 
+#ifdef FEATURE_SKY_CP_ADB_LOG_FOR_VITAMIN
+DEFINE_LOGGER_DEVICE(log_vitamin, LOGGER_LOG_VITAMIN, 256*1024)
+#endif
+
 static struct logger_log *get_log_from_minor(int minor)
 {
 	if (log_main.misc.minor == minor)
@@ -743,8 +753,91 @@ static struct logger_log *get_log_from_minor(int minor)
 		return &log_radio;
 	if (log_system.misc.minor == minor)
 		return &log_system;
+
+#ifdef FEATURE_SKY_CP_ADB_LOG_FOR_VITAMIN
+	if (log_vitamin.misc.minor == minor)
+		return &log_vitamin;
+#endif
+
 	return NULL;
 }
+
+#ifdef CONFIG_PANTECH_ERR_CRASH_LOGGING
+struct logger_log *cur_log;
+void logcat_set_log(int index)
+{
+	switch(index){
+		case 1:
+			cur_log = &log_main;
+			break;
+		case 2:
+			cur_log = &log_events;
+			break;
+		case 3:
+			cur_log = &log_radio;
+			break;
+		case 4:
+			cur_log = &log_system;
+			break;
+
+#ifdef FEATURE_SKY_CP_ADB_LOG_FOR_VITAMIN
+		case 5:
+			cur_log = &log_vitamin;
+			break;
+#endif
+
+		default:
+			cur_log = &log_system;
+			break;
+	}
+}
+
+int logcat_buf_copy(char *dest, int len)
+{
+    struct logger_log   *log;
+    int                 size;
+    int                 head;
+    int                 w_off;
+    int                 real_size;
+    int                 ret;
+    int                 i;
+
+    log         = cur_log;
+    size        = (int)(log->size);
+    head        = (int)(log->head);
+    w_off       = (int)(log->w_off) + size;
+    real_size   = (int) logger_offset(log, w_off - head);
+    ret         = min(real_size, len);
+    for(i = ret; i > 0; i--)
+    {
+        dest[i] = log->buffer[logger_offset(log, head + i - 1)];
+    }
+	return ret;
+}
+
+void* logcat_get_addr(int index)
+{
+	switch(index){
+		case 1:
+			return (void *)log_main.buffer;
+		case 2:
+			return (void *)log_events.buffer;
+		case 3:
+			return (void *)log_radio.buffer;
+		case 4:
+			return (void *)log_system.buffer;
+
+#ifdef FEATURE_SKY_CP_ADB_LOG_FOR_VITAMIN
+	       case 5:
+		       return (void *)log_vitamin.buffer;
+#endif
+
+		default:
+			break;
+	}
+	return 0;
+}
+#endif
 
 static int __init init_log(struct logger_log *log)
 {
@@ -782,6 +875,12 @@ static int __init logger_init(void)
 	ret = init_log(&log_system);
 	if (unlikely(ret))
 		goto out;
+
+#ifdef FEATURE_SKY_CP_ADB_LOG_FOR_VITAMIN
+  ret = init_log(&log_vitamin);
+	if (unlikely(ret))
+		goto out;  
+#endif
 
 out:
 	return ret;

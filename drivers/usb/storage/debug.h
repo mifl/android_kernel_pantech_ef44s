@@ -46,6 +46,7 @@
 
 #define USB_STORAGE "usb-storage: "
 
+#undef CONFIG_USB_STORAGE_DEBUG
 #ifdef CONFIG_USB_STORAGE_DEBUG
 void usb_stor_show_command(struct scsi_cmnd *srb);
 void usb_stor_show_sense( unsigned char key,

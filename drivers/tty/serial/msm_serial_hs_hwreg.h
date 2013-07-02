@@ -183,8 +183,14 @@ enum msm_hsl_regs {
 
 /* Parity configuration */
 #define NO_PARITY 0x0
+#ifdef CONFIG_MACH_MSM8960_EF44S  // [LS3]KSCHOI 20130207, uart gpio not active		
+#define EVEN_PARITY 0x1
+#define ODD_PARITY 0x2
+#else
 #define EVEN_PARITY 0x2
 #define ODD_PARITY 0x1
+#endif
+
 #define SPACE_PARITY 0x3
 
 #define UARTDM_IPR_STALE_TIMEOUT_MSB_BMSK 0xffffff80

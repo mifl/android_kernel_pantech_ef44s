@@ -28,9 +28,18 @@ struct msm_serial_hs_platform_data {
 	int userid;
 };
 
+#if 1 //brcm-test
+#define CLOCK_REQUEST_AVAILABLE 	0
+#define CLOCK_REQUEST_UNAVAILABLE 	1
+struct uart_port * msm_hs_get_bt_uport(unsigned int line);
+int msm_hs_get_bt_uport_clock_state(struct uart_port *uport);
+#endif
 unsigned int msm_hs_tx_empty(struct uart_port *uport);
 void msm_hs_request_clock_off(struct uart_port *uport);
 void msm_hs_request_clock_on(struct uart_port *uport);
 void msm_hs_set_mctrl(struct uart_port *uport,
 				    unsigned int mctrl);
+
+struct uart_port * msm_hs_get_bt_uport(unsigned int line);
+
 #endif

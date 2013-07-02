@@ -790,13 +790,13 @@ drop:
 					 i, (unsigned int)
 					(driver->hsic_buf_tbl[i].buf),
 					driver->hsic_buf_tbl[i].length);
-				num_data++;
+			num_data++;
 				/* Copy the length of data being passed */
 				if (copy_to_user(buf+ret, (void *)&(driver->
 					hsic_buf_tbl[i].length), 4)) {
 					num_data--;
 					goto drop_hsic;
-				}
+		}
 				ret += 4;
 
 				/* Copy the actual data being passed */
@@ -1187,6 +1187,18 @@ int mask_request_validate(unsigned char mask_buf[])
 			if ((ss_cmd == 0) || (ss_cmd == 0x1))
 				return 1;
 			break;
+
+          // FEATURE_SKY_CP_F3_TRACE[
+          // 20120701 hbwoo, Enable f3trace commands
+          case 0x25:
+                return 1;		
+          //]
+          
+          // FEATURE_SKY_CP_DMLOGGING_DPL[
+          case 0x2a:
+                return 1;
+          //]		
+
 		default:
 			return 0;
 			break;

@@ -22,6 +22,26 @@
 
 #include "../staging/android/timed_output.h"
 
+//++ p11309 2012.11.10 for Vibrator level control
+#define PAN_HS_VIB_ALL_VOLUME_CTL 
+#define VIBRATOR_PANTECH_PATCH
+
+#ifdef DBG_ENABLE
+#define dbg(fmt, args...)   printk("[VIB] " fmt, ##args)
+#else
+#define dbg(fmt, args...)
+#endif
+#ifdef FUNC_DBG_ENABLE
+#define dbg_func_in()       dbg("[+] %s\n", __func__)
+#define dbg_func_out()      dbg("[-] %s\n", __func__)
+#define dbg_line()          dbg("[LINE] %d(%s)\n", __LINE__, __func__)
+#else
+#define dbg_func_in() 
+#define dbg_func_out()
+#define dbg_line()    
+#endif
+//-- p11309
+
 #define VIB_DRV			0x4A
 
 #define VIB_DRV_SEL_MASK	0xf8
@@ -120,7 +140,15 @@ static int pm8xxx_vib_set(struct pm8xxx_vib *vib, int on)
 	u8 val;
 
 	if (on) {
+
+//++ p11309 2012.11.10 for Vibrator level control
+#ifdef PAN_HS_VIB_ALL_VOLUME_CTL 
+		val= 0;
+#else
 		val = vib->reg_vib_drv;
+#endif
+//-- p11309
+		
 		val |= ((vib->level << VIB_DRV_SEL_SHIFT) & VIB_DRV_SEL_MASK);
 		rc = pm8xxx_vib_write_u8(vib, val, VIB_DRV);
 		if (rc < 0)
@@ -140,6 +168,47 @@ static int pm8xxx_vib_set(struct pm8xxx_vib *vib, int on)
 }
 
 static void pm8xxx_vib_enable(struct timed_output_dev *dev, int value)
+
+//++ p11309 2012.11.10 for Vibrator level control
+#ifdef PAN_HS_VIB_ALL_VOLUME_CTL 
+{
+	struct pm8xxx_vib *vib = container_of(dev, struct pm8xxx_vib,
+		timed_dev);
+	unsigned long flags;
+
+	unsigned short level;
+	long timeoutms;
+retry:
+	spin_lock_irqsave(&vib->lock, flags);
+	if (hrtimer_try_to_cancel(&vib->vib_timer) < 0) {
+		spin_unlock_irqrestore(&vib->lock, flags);
+		cpu_relax();
+		goto retry;
+	}
+	level = (value>>16) & 0xFFFF;
+	timeoutms = value & 0xFFFF;
+
+	if(level>0) {
+		level = ((level*70)/100) + 6 + 11; //1.7v ~ 3.1v
+	}
+	vib->level = level;
+	dbg("[VIB]level=%d / timeoutms=%ld\n", level, timeoutms);
+
+	if (timeoutms == 0)
+		vib->state = 0;
+	else {	
+		timeoutms = (timeoutms > vib->pdata->max_timeout_ms ?
+			0x7FFFFFFF : timeoutms);
+		vib->state = 1;
+		dbg("timeoutms = %ld\n", timeoutms);
+		hrtimer_start(&vib->vib_timer,
+			ktime_set(timeoutms / 1000, (timeoutms % 1000) * 1000000),
+			HRTIMER_MODE_REL);
+	}
+	spin_unlock_irqrestore(&vib->lock, flags);
+	pm8xxx_vib_set(vib, vib->state);
+}
+#else
 {
 	struct pm8xxx_vib *vib = container_of(dev, struct pm8xxx_vib,
 					 timed_dev);
@@ -166,6 +235,8 @@ retry:
 	spin_unlock_irqrestore(&vib->lock, flags);
 	schedule_work(&vib->work);
 }
+#endif
+//-- p11309
 
 static void pm8xxx_vib_update(struct work_struct *work)
 {

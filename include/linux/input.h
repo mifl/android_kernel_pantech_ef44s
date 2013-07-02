@@ -470,6 +470,10 @@ struct input_keymap_entry {
 
 #define KEY_MICMUTE		248	/* Mute / unmute the microphone */
 
+//++ p11309 - 2012.11.02
+#define KEY_RECENTAPPS		248  // p11774_Touch_key
+//-- p11309
+
 /* Code 255 is reserved for special needs of AT keyboard driver */
 
 #define BTN_MISC		0x100

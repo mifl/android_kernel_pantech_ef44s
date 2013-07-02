@@ -24,6 +24,9 @@
 #include <linux/mfd/pm8xxx/gpio.h>
 #include <linux/input/pmic8xxx-keypad.h>
 
+#ifdef CONFIG_PANTECH_ERR_CRASH_LOGGING
+#include <mach/pantech_apanic.h>
+#endif
 #define PM8XXX_MAX_ROWS		18
 #define PM8XXX_MAX_COLS		8
 #define PM8XXX_ROW_SHIFT	3
@@ -287,6 +290,9 @@ static void __pmic8xxx_kp_scan_matrix(struct pmic8xxx_kp *kp, u16 *new_state,
 					!(new_state[row] & (1 << col)));
 
 			input_sync(kp->input);
+#ifdef CONFIG_PANTECH_ERR_CRASH_LOGGING
+			pantech_force_dump_key(kp->keycodes[code],!(new_state[row] & (1 << col)) );
+#endif
 		}
 	}
 }

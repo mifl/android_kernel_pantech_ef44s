@@ -820,6 +820,33 @@ config MACH_MSM9615_MTP
 	help
 	  Support for the Qualcomm MSM9615 MTP device.
 
+config MACH_MSM8960_EF44S
+	depends on ARCH_MSM8960
+	bool "MSM8960 EF44S"
+	select CUST_PANTECH_H
+	help
+	  Support for the Qualcomm MSM8960 EF44S device.
+
+config MACH_MSM8960_VEGAPVW
+	depends on ARCH_MSM8960
+	bool "MSM8960 VEGAPVW"
+	select CUST_PANTECH_H
+	help
+	  Support for the Qualcomm MSM8960 VEGAPVW device.
+
+config MACH_MSM8960_MAGNUS
+	depends on ARCH_MSM8960
+	bool "MSM8960 MAGNUS"
+	select CUST_PANTECH_H
+	help
+	  Support for the Qualcomm MSM8960 MAGNUS device.	
+	  
+config CUST_PANTECH_H
+	bool
+
+if CUST_PANTECH_H
+source "arch/arm/mach-msm/cust/Kconfig"
+endif
 config MSM_USE_TSIF1
 	depends on ARCH_MSM8X60
 	bool "MSM8x60 use TSIF1"

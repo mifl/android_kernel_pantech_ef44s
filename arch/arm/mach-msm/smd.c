@@ -88,6 +88,9 @@ struct smsm_shared_info {
 	uint32_t *state;
 	uint32_t *intr_mask;
 	uint32_t *intr_mux;
+#ifdef CONFIG_PANTECH_ERR_CRASH_LOGGING
+	unsigned char *crash_buf;
+#endif
 };
 
 static struct smsm_shared_info smsm_info;
@@ -583,7 +586,65 @@ void smd_diag(void)
 		pr_err("smem: CRASH LOG\n'%s'\n", x);
 	}
 }
+#ifdef CONFIG_PANTECH_ERR_CRASH_LOGGING
+static char  *buf = NULL;
+void printcrash(const char *fmt, ...)
+{
+	static int printed_len = 0;
 
+	va_list args;
+
+	preempt_disable();
+      
+	if(!buf)
+            buf = (char *)smem_find(ID_DIAG_ERR_MSG,SZ_DIAG_ERR_MSG);
+	if(buf){
+		va_start(args,fmt);
+		printed_len +=vsnprintf(buf+printed_len,SZ_DIAG_ERR_MSG-printed_len,fmt,args);
+		va_end(args);
+		//len =min((int)strlen(message),SZ_DIAG_ERR_MSG);
+		//memcpy(smem_diag_buf,message,len);
+		//smem_diag_buf[SZ_DIAG_ERR_MSG - 1] = '\0';
+		barrier();
+	}
+	preempt_enable();
+}
+
+EXPORT_SYMBOL(printcrash);
+ void smem_diag_get_message( char *message, int len )
+{
+	char *smem_diag_buf;
+
+	if(!message)
+         	return;
+     
+	smem_diag_buf = smem_find(ID_DIAG_ERR_MSG,SZ_DIAG_ERR_MSG);
+	if(smem_diag_buf != 0) {
+		len =min(len,SZ_DIAG_ERR_MSG);
+		memcpy(message,smem_diag_buf,len);
+		smem_diag_buf[SZ_DIAG_ERR_MSG - 1] = '\0';
+	}
+}
+EXPORT_SYMBOL(smem_diag_get_message);
+
+void smem_diag_set_message(char *message)
+{
+	int len;
+	char *smem_diag_buf;
+	if(!message)
+		return;
+
+	smem_diag_buf = smem_find(ID_DIAG_ERR_MSG,SZ_DIAG_ERR_MSG);
+	if(smem_diag_buf != 0) {
+		len =min((int)strlen(message),SZ_DIAG_ERR_MSG);
+		memcpy(smem_diag_buf,message,len);
+		smem_diag_buf[SZ_DIAG_ERR_MSG - 1] = '\0';
+	}
+	barrier();
+}
+EXPORT_SYMBOL(smem_diag_set_message);
+
+#endif
 
 static void handle_modem_crash(void)
 {
@@ -2470,6 +2531,12 @@ static int smsm_init(void)
 						 SMSM_NUM_INTR_MUX *
 						 sizeof(uint32_t));
 
+#ifdef CONFIG_PANTECH_ERR_CRASH_LOGGING
+	if(!smsm_info.crash_buf)
+		smsm_info.crash_buf = smem_alloc2(SMEM_ID_VENDOR2,
+						 MAX_CRASH_BUF_SIZE * 
+						 sizeof(unsigned char));
+#endif
 	i = smsm_cb_init();
 	if (i)
 		return i;
@@ -2485,6 +2552,10 @@ void smsm_reset_modem(unsigned mode)
 		mode = SMSM_RESET | SMSM_SYSTEM_DOWNLOAD;
 	} else if (mode == SMSM_MODEM_WAIT) {
 		mode = SMSM_RESET | SMSM_MODEM_WAIT;
+#ifdef CONFIG_PANTECH_ERR_CRASH_LOGGING
+	} else if(mode == SMSM_SYSTEM_REBOOT){
+		mode = SMSM_RESET | SMSM_SYSTEM_REBOOT;
+#endif
 	} else { /* reset_mode is SMSM_RESET or default */
 		mode = SMSM_RESET;
 	}

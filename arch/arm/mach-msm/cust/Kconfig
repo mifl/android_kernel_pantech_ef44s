@@ -1,0 +1,295 @@
+if CUST_PANTECH_H
+
+#
+# PANTECH Cust feature section
+#
+
+config PANTECH_VERIZON
+  bool
+config PANTECH_ATNT
+  bool
+config PANTECH_JAPAN
+  bool
+config PANTECH_DOMESTIC
+  bool
+
+
+if MACH_MSM8960_SVLTE
+config DEFINE_LIST_SVLTE
+	bool
+	default y
+#	select PANTECH_SDCARD
+#	select PANTECH_ERR_CRASH_LOGGING
+endif
+
+if MACH_MSM8960_CSFB
+config DEFINE_LIST_CSFB
+	bool
+	default y
+#	select PANTECH_SDCARD
+	select PANTECH_ERR_CRASH_LOGGING
+endif
+
+if MACH_MSM8960_VEGAPVW
+config DEFINE_LIST_VEGAPVW
+	bool
+	default y
+	select PANTECH_VERIZON
+#	select PANTECH_SDCARD
+#	select F_SKYDISP_QBUG_FIX_BACKLIGHT
+	select F_SKYDISP_BOOT_LOGO_IN_KERNEL
+	select F_SKYDISP_NO_CURSOR_IN_BOOT
+	select F_SKYDISP_LCD_RESET
+	select F_SKYDISP_LCD_FORCE_ONOFF
+	select F_SKYDISP_FORCE_ENCRYPTION_OFF
+	select F_SKYDISP_SMART_DIMMING
+	select PANTECH_LCD_POWEROFFSEQ_ON_PHONEOFF	
+	select PANTECH_PMIC
+	select PANTECH_PMIC_PWRKEY
+	select PANTECH_PMIC_MAX17058
+	select PANTECH_I2C_MAXIM
+	select PANTECH_PMIC_RESET_REASON
+	select PANTECH_BMS
+	select PANTECH_CHARGER
+	select PANTECH_ERR_CRASH_LOGGING
+	select PANTECH_SDCARD_HIGH_VOLTAGE_FIX
+	select PANTECH_FS_AUTO_REPAIR
+	select PANTECH_CHARGER_WIRELESS
+	select ANDROID_PANTECH_USB_ABNORMAL_CHARGER_INFO
+	select PANTECH_MMC
+
+endif
+
+if MACH_MSM8960_EF44S
+config DEFINE_LIST_EF44S
+	bool
+	default y
+	select PANTECH_DOMESTIC
+#	select PANTECH_SDCARD
+#	select F_SKYDISP_QBUG_FIX_BACKLIGHT
+	select F_SKYDISP_BOOT_LOGO_IN_KERNEL
+	select F_SKYDISP_NO_CURSOR_IN_BOOT
+	select F_SKYDISP_LCD_RESET
+	select F_SKYDISP_LCD_FORCE_ONOFF
+	select F_SKYDISP_FORCE_ENCRYPTION_OFF
+	select PANTECH_LCD_POWEROFFSEQ_ON_PHONEOFF	
+	select PANTECH_PMIC
+	select PANTECH_PMIC_PWRKEY
+	select PANTECH_PMIC_RESET_REASON
+	select PANTECH_BMS
+	select PANTECH_CHARGER
+	select PANTECH_PMIC_MAX17058
+	select PANTECH_ERR_CRASH_LOGGING
+	select PANTECH_SDCARD_HIGH_VOLTAGE_FIX
+	select PANTECH_FS_AUTO_REPAIR
+	select BRCM_BT
+	select ANDROID_PANTECH_USB_OTG_INTENT
+	select ANDROID_PANTECH_USB_OTG_CHARGER_SUSPEND
+	select ANDROID_PANTECH_USB_ABNORMAL_CHARGER_INFO
+	select PANTECH_WLAN_BRCM
+	select PANTECH_MMC
+endif
+
+if MACH_MSM8960_MAGNUS
+config DEFINE_LIST_MAGNUS
+	bool
+	default y
+	select PANTECH_ATNT
+#	select PANTECH_SDCARD
+	select PANTECH_ERR_CRASH_LOGGING
+	select PANTECH_PMIC
+	select PANTECH_PMIC_PWRKEY
+	select PANTECH_PMIC_RESET_REASON
+	select PANTECH_BMS
+	select PANTECH_CHARGER
+	select PANTECH_PMIC_MAX17058
+#	select F_SKYDISP_QBUG_FIX_BACKLIGHT
+	select F_SKYDISP_BOOT_LOGO_IN_KERNEL
+	select F_SKYDISP_FORCE_ENCRYPTION_OFF
+	select F_SKYDISP_NO_CURSOR_IN_BOOT
+	select F_SKYDISP_LCD_RESET
+	select F_SKYDISP_LCD_FORCE_ONOFF
+	select PANTECH_LCD_POWEROFFSEQ_ON_PHONEOFF	
+	select PANTECH_SDCARD_HIGH_VOLTAGE_FIX
+	select ANDROID_PANTECH_USB_ABNORMAL_CHARGER_INFO
+	select PANTECH_MMC
+endif
+
+
+#config PANTECH_SDCARD
+#	bool
+
+config PANTECH_ERR_CRASH_LOGGING
+	bool
+
+config PANTECH_SDCARD_HIGH_VOLTAGE_FIX
+	bool
+
+config PANTECH_FS_AUTO_REPAIR
+	bool
+
+config PANTECH_PMIC
+	bool
+
+config PANTECH_PMIC_PWRKEY
+	bool
+
+config PANTECH_PMIC_MAX17058
+	bool
+
+config PANTECH_I2C_MAXIM
+	bool
+	
+config PANTECH_PMIC_RESET_REASON
+	bool
+	
+config PANTECH_BMS
+	bool
+	select PANTECH_BMS_UPDATE
+	select PANTECH_BMS_BATTERY_TYPE
+	select PANTECH_BMS_TEST
+config PANTECH_BMS_UPDATE
+	bool
+config PANTECH_BMS_BATTERY_TYPE
+	bool	
+config PANTECH_BMS_TEST
+	bool
+	
+config PANTECH_CHARGER
+	bool
+	select PANTECH_CHARGER_OFFLINE
+config PANTECH_CHARGER_OFFLINE
+	bool
+
+config PANTECH_CHARGER_WIRELESS
+	bool
+
+config PANTECH_SMB_CHARGER
+	bool
+comment "PANTECH USB Driver"
+config ANDROID_PANTECH_USB
+  bool "PANTECH USB"
+  default y
+	 help
+     Support Pantech USB
+
+config ANDROID_PANTECH_USB_MANAGER
+  depends on ANDROID_PANTECH_USB
+  bool "PANTECH USB Manager"
+  default y
+  help
+     Support Pantech USB Manager
+
+config ANDROID_PANTECH_USB_CDFREE
+  depends on ANDROID_PANTECH_USB && PANTECH_VERIZON
+  bool "PANTECH USB Cdfree"
+  default y
+	 help
+     Support Pantech USB Cdfree 
+
+config ANDROID_PANTECH_USB_FACTORY_CABLE
+  depends on ANDROID_PANTECH_USB
+  bool "PANTECH USB FACTORY CABLE"
+  default y
+	 help
+     Support Pantech USB
+
+config ANDROID_PANTECH_USB_OTG_MODE
+  depends on ANDROID_PANTECH_USB
+  bool "PANTECH USB OTG mode"
+  default n
+	 help
+     Support Pantech USB OTG mode
+
+config ANDROID_PANTECH_USB_OTG_INTENT
+  depends on ANDROID_PANTECH_USB
+  bool "PANTECH USB OTG Intent"
+  default n
+	 help
+     Support Pantech USB OTG Intent
+
+config ANDROID_PANTECH_USB_OTG_CHARGER_SUSPEND
+  depends on ANDROID_PANTECH_USB
+  bool "PANTECH USB OTG Charger suspend"
+  default n
+	 help
+     Support Pantech USB OTG Intent
+
+config ANDROID_PANTECH_USB_ABNORMAL_CHARGER_INFO
+ depends on ANDROID_PANTECH_USB
+  bool "PANTECH USB Charger cable abnormal case"
+  default n
+	 help
+     Support Pantech USB
+
+# LCD 
+#config F_SKYDISP_QBUG_FIX_BACKLIGHT
+#        bool 
+
+config F_SKYDISP_BOOT_LOGO_IN_KERNEL
+        bool 
+
+config F_SKYDISP_NO_CURSOR_IN_BOOT
+        bool 
+        
+config F_SKYDISP_LCD_RESET
+        bool 
+
+config F_SKYDISP_LCD_FORCE_ONOFF
+        bool 
+
+config F_SKYDISP_SMART_DIMMING
+        bool 
+        
+config F_SKYDISP_FORCE_ENCRYPTION_OFF
+        bool 
+
+config PANTECH_LCD_POWEROFFSEQ_ON_PHONEOFF
+	bool
+        
+# SD CARD
+config PANTECH_NO_EMMC_SDCARD
+	bool
+	
+config PANTECH_MMC
+	bool
+
+# PANTECH SOUND
+config PANTECH_SND
+    bool "PANTECH SOUND CONFIGS"
+        default y
+        help
+            Support Pantech Sound configs
+
+config PANTECH_GPIO_SLEEP_CONFIG
+       bool "PANTECH GPIO SLEEP CONFIG"
+       default y
+
+config BRCM_BT
+	bool "BRCM BT CONFIG"
+	default y    
+        help
+            Support Broadcom bluetooth configs       
+ 
+config PANTECH_WLAN_BRCM
+	bool "Broadcom BCM4334 driver"
+	depends on ARCH_MSM8960 && !WCNSS_CORE
+	select MMC_MSM_SDC4_SUPPORT
+	#select BCMDHD
+	#select WIRELESS_EXT
+	select SKY_WLAN_MMC
+	select SKY_PANMAC
+	#select KSKY_RAWDATA
+	---help---
+	  Broadcom driver for connectivity system	  	
+
+config SKY_WLAN_MMC
+	bool		
+
+config SKY_PANMAC
+	bool "Device file for accessing MAC"
+
+config KSKY_RAWDATA
+	bool "sky_rawdata facility for kernel space"
+
+endif

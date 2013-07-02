@@ -60,6 +60,12 @@ static int mmc_queue_thread(void *d)
 	struct request_queue *q = mq->queue;
 	struct request *req;
 
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+	struct mmc_host *host = mq->card->host;
+	bool r1_state_flag = false;
+#endif
+
 	current->flags |= PF_MEMALLOC;
 
 	down(&mq->thread_sem);
@@ -67,6 +73,25 @@ static int mmc_queue_thread(void *d)
 		struct mmc_queue_req *tmp;
 		req = NULL;	/* Must be set to NULL at each iteration */
 
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+
+		host = mq->card->host;
+
+		if(host && host->bkops_started == true){
+			if(1){ // modify for eMMC firmware 06 version 
+				del_timer_sync(&host->req_bkops_timer);
+				host->req_bkops_timer_expired = false;
+				
+				r1_state_flag = mmc_check_r1_state_prg(mq->card, false);
+			} else{
+				up(&mq->thread_sem);
+				schedule();
+				down(&mq->thread_sem);
+				continue;
+			}	
+		}
+#endif
 		spin_lock_irq(q->queue_lock);
 		set_current_state(TASK_INTERRUPTIBLE);
 		req = blk_fetch_request(q);
@@ -74,9 +99,26 @@ static int mmc_queue_thread(void *d)
 		spin_unlock_irq(q->queue_lock);
 
 		if (req || mq->mqrq_prev->req) {
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+			if (host->bkops_started){
+				if(r1_state_flag){
+					host->req_bkops_timer_expired = false;				
+					host->bkops_force_start = true;
+					host->bkops_force_stoped = true;
+					
+					mmc_bkops_block_timer_start(host, MMC_MAX_BKOPS_BLOCK_TIME);
+				}
+				
+				mmc_interrupt_bkops(mq->card);
+				host->bkops_started = false;
+
+				mmc_bkops_time_info_update(host);
+			}
+#else
 			if (mmc_card_doing_bkops(mq->card))
 				mmc_interrupt_bkops(mq->card);
-
+#endif
 			set_current_state(TASK_RUNNING);
 			mq->issue_fn(mq, req);
 		} else {
@@ -85,7 +127,27 @@ static int mmc_queue_thread(void *d)
 				break;
 			}
 
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+			if(host->bkops_started){
+				goto skip_bkops;
+			}else if(host->bkops_force_stoped){
+				if(!host->req_bkops_block_timer_expired){
+					goto skip_bkops;
+				}
+
+				host->bkops_force_stoped = false;
+				
+				del_timer_sync(&host->req_bkops_block_timer);
+				host->req_bkops_block_timer_expired = false;
+			}
+#endif
 			mmc_start_bkops(mq->card);
+
+/* 20121221 LS1-JHM modified : enabling BKOPS for eMMC performance */
+#ifdef FEATURE_PANTECH_SAMSUNG_EMMC_BUG_FIX
+skip_bkops:
+#endif
 			up(&mq->thread_sem);
 			schedule();
 			down(&mq->thread_sem);

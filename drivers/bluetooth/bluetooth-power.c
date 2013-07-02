@@ -28,6 +28,8 @@ static int bluetooth_toggle_radio(void *data, bool blocked)
 	int ret = 0;
 	int (*power_control)(int enable);
 
+	printk(KERN_INFO"ydpark_test : %s \n",__func__);
+	
 	power_control = data;
 	if (previous != blocked)
 		ret = (*power_control)(!blocked);
